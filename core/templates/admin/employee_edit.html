@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ emp.name if emp else 'New employee' }}{% endblock %}
+{% block content %}
+{% set heading, active = (emp.name if emp else "New employee"), "employees" %}{% include "admin/_nav.html" %}
+<form method="post" class="card" style="max-width:860px">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  {% if emp and emp.source != 'manual' %}<p class="flash flash-info">Synced from <b>{{ emp.source }}</b>. Name, designation, department and status will be overwritten by the next sync; email and a hand-set manager are kept.</p>{% endif %}
+  <div class="grid g2">
+    <div class="field"><label class="req">Employee ID</label><input type="text" name="employee_id" value="{{ emp.employee_id if emp else '' }}" {{ 'readonly' if emp else 'required' }}></div>
+    <div class="field"><label class="req">Name</label><input type="text" name="name" value="{{ emp.name if emp else '' }}" required></div>
+    <div class="field"><label>Designation</label><input type="text" name="designation" value="{{ emp.designation or '' if emp else '' }}"></div>
+    <div class="field"><label>Department</label><input type="text" name="department" list="depts" value="{{ emp.department or '' if emp else '' }}">
+      <datalist id="depts">{% for d in departments %}<option value="{{ d }}">{% endfor %}</datalist></div>
+    <div class="field"><label>Email</label><input type="email" name="email" value="{{ emp.email or '' if emp else '' }}"><div class="help">Needed for OTP sign-in and notifications.</div></div>
+    <div class="field"><label>Phone</label><input type="tel" name="phone" value="{{ emp.phone or '' if emp else '' }}"></div>
+    <div class="field"><label>Gender</label><input type="text" name="gender" value="{{ emp.gender or '' if emp else '' }}"></div>
+    <div class="field"><label>Category</label><input type="text" name="category" value="{{ emp.category or '' if emp else '' }}"></div>
+    <div class="field"><label>Status</label><select name="status">{% for s in ['Active', 'Inactive'] %}<option {{ 'selected' if emp and emp.status == s }}>{{ s }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Reporting manager (employee ID)</label><input type="text" name="manager_id" data-emp value="{{ emp.reporting_manager_id or '' if emp else '' }}">
+      <div class="help">{% if emp and emp.manager %}Currently {{ emp.manager.name }}{% if emp.manager_locked %} - set by hand, kept across syncs. <label style="display:inline"><input type="checkbox" name="unlock_manager" value="1"> let sync manage it again</label>{% endif %}{% else %}Type a name or ID{% endif %}</div></div>
+  </div>
+  <hr>
+  <div class="grid g2">
+    <div class="field"><label><input type="checkbox" name="is_superadmin" value="1" {{ 'checked' if emp and emp.is_superadmin }} {{ 'disabled' if emp and emp.employee_id == current_user.employee_id }}> Super admin (full access to everything)</label></div>
+    <div class="field"><label>Local password (optional)</label><input type="password" name="password" autocomplete="new-password"><div class="help">Lets this account sign in with a password instead of OTP.</div></div>
+  </div>
+  <div class="row"><button class="btn btn-primary">Save</button><a class="btn" href="{{ url_for('admin.employees') }}">Back</a></div>
+</form>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "guest_house/_layout.html" %}
+{% from "guest_house/_macros.html" import status, dt %}
+{% block title %}Guest house approvals{% endblock %}
+{% block heading %}Approvals{% endblock %}
+{% block page %}
+<section class="card">
+  <h2>Waiting for you ({{ pending|length }})</h2>
+  {% if pending %}
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Request</th><th>Applicant</th><th>Guests</th><th>Arrival</th><th>Needs</th><th>Step</th><th>Since</th><th></th></tr></thead>
+    <tbody>{% for t, r in pending %}
+      <tr>
+        <td><b>{{ r.req_no }}</b><div class="small muted">{{ r.visit_type }}</div></td>
+        <td>{{ r.applicant.name }}<div class="small muted">{{ r.department or '' }}</div></td>
+        <td>{{ r.guests|length }}</td><td class="nowrap">{{ dt(r.first_arrival) }}</td>
+        <td class="small">{% for f, l in [('need_guest_house','GH'),('need_hotel','Hotel'),('need_vehicle','Vehicle'),('need_food','Food'),('need_ticket','Ticket')] if r[f] %}<span class="badge">{{ l }}</span> {% endfor %}</td>
+        <td><span class="badge b-pending">{{ t.label }}</span></td><td class="nowrap small">{{ dt(t.activated_at) }}</td>
+        <td class="right"><a class="btn btn-sm btn-primary" href="{{ url_for('guest_house.request_view', req_id=r.id) }}">Review</a></td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty">Nothing waiting for you.</div>{% endif %}
+</section>
+<section class="card" style="margin-top:16px">
+  <h2>Recently decided by you</h2>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Request</th><th>Applicant</th><th>Step</th><th>Your decision</th><th>When</th><th>Now</th></tr></thead>
+    <tbody>{% for t, r in history %}
+      <tr><td><a href="{{ url_for('guest_house.request_view', req_id=r.id) }}">{{ r.req_no }}</a></td><td>{{ r.applicant.name }}</td><td>{{ t.label }}</td>
+        <td><span class="badge b-{{ t.status }}">{{ t.status }}</span></td><td class="small nowrap">{{ dt(t.acted_at) }}</td><td>{{ status(r) }}</td></tr>
+    {% else %}<tr><td colspan="6" class="empty">None yet.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

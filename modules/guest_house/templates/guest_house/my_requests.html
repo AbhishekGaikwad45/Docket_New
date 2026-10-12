@@ -1,0 +1,12 @@
+{% extends "guest_house/_layout.html" %}
+{% from "guest_house/_macros.html" import request_table %}
+{% block title %}My guest requests{% endblock %}
+{% block heading %}My requests{% endblock %}
+{% block actions %}<a class="btn btn-primary" href="{{ url_for('guest_house.new_request') }}">+ New request</a>{% endblock %}
+{% block page %}
+<form class="row" style="margin-bottom:12px">
+  <select name="status" onchange="this.form.submit()" style="max-width:260px"><option value="">All statuses</option>
+    {% for k, v in statuses.items() %}<option value="{{ k }}" {{ 'selected' if status == k }}>{{ v }}</option>{% endfor %}</select>
+</form>
+{{ request_table(reqs, 'You have not raised any guest requests yet.') }}
+{% endblock %}

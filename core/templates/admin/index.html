@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Administration{% endblock %}
+{% block content %}
+{% set heading, active = "Administration", "index" %}{% include "admin/_nav.html" %}
+<div class="grid g4">
+  <div class="stat accent"><div class="k">Active employees</div><div class="v">{{ stats.employees }}</div></div>
+  <div class="stat accent"><div class="k">Departments</div><div class="v">{{ stats.departments }}</div><div class="s">from the employee master</div></div>
+  <div class="stat accent"><div class="k">No reporting manager</div><div class="v">{{ stats.no_manager }}</div>
+    {% if current_user.is_superadmin %}<div class="s"><a href="{{ url_for('admin.employees', no_manager=1) }}">review</a></div>{% endif %}</div>
+  <div class="stat accent"><div class="k">No email (can't sign in)</div><div class="v">{{ stats.no_email }}</div></div>
+</div>
+<div class="card" style="margin-top:18px">
+  <h2>How it fits together</h2>
+  <ol class="muted">
+    <li><b>Employees</b> come from the Mantra sync or an Excel upload. Fix emails or add people by hand under Employees.</li>
+    <li>Every <b>application</b> has its own <b>approval org chart</b>: boxes (org levels) with the people who approve at that level, stacked like an org diagram.
+      A request starts at the box for the applicant's department (or the level above the applicant, if they're in the chart) and climbs to the top.</li>
+    <li>Per application you also choose who may use it, administer it, manage masters and see reports.</li>
+  </ol>
+</div>
+{% endblock %}

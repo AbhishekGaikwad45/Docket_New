@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Applications{% endblock %}
+{% block content %}
+{% set heading, active = "Applications", "apps" %}{% include "admin/_nav.html" %}
+<div class="grid g3">
+{% for app in apps %}
+  <a class="card row" href="{{ url_for('admin.app_config', code=app.code) }}" style="color:inherit">
+    <div style="width:64px">{{ icon(app.icon) }}</div>
+    <div><h3>{{ app.name }}</h3><div class="small muted">{{ app.description }}</div></div>
+  </a>
+{% endfor %}
+</div>
+<p class="muted small" style="margin-top:16px">Applications are code: add a package under <code>modules/</code> exposing <code>APP = AppDef(...)</code>, run its migration, then configure it here.</p>
+{% endblock %}

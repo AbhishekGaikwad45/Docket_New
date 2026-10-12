@@ -1,0 +1,64 @@
+{% extends "guest_house/_layout.html" %}
+{% from "guest_house/_macros.html" import dt %}
+{% block title %}Guest house dashboard{% endblock %}
+{% block heading %}Dashboard{% endblock %}
+{% block actions %}
+  <a class="btn btn-sm" href="?day={{ prev_day }}" aria-label="Previous day">‹</a>
+  <form><input type="date" name="day" value="{{ day }}" onchange="this.form.submit()" aria-label="Date" style="width:160px"></form>
+  <a class="btn btn-sm" href="?day={{ next_day }}" aria-label="Next day">›</a>
+  <a class="btn btn-sm" href="?">Today</a>
+{% endblock %}
+{% block page %}
+<div class="grid g4">
+  <div class="stat accent"><div class="k">Room occupancy · {{ day.strftime('%d %b') }}</div><div class="v">{{ stats.occupancy }}%</div>
+    <div class="meter"><span style="width:{{ stats.occupancy }}%"></span></div>
+    <div class="s">{{ stats.occupied }} of {{ stats.rooms }} rooms · {{ stats.free }} free{% if stats.maintenance %} · {{ stats.maintenance }} under maintenance{% endif %}</div></div>
+  <div class="stat accent"><div class="k">Guests in house now</div><div class="v">{{ stats.in_house }}</div>
+    <div class="s">{{ stats.arrivals }} arriving · {{ stats.departures }} leaving on {{ day.strftime('%d %b') }}</div></div>
+  <div class="stat accent"><div class="k">Pending approval</div><div class="v">{{ stats.pending }}</div>
+    <div class="s"><a href="{{ url_for('guest_house.desk') }}">{{ stats.to_arrange }} approved, awaiting arrangement</a></div></div>
+  <div class="stat accent"><div class="k">Vehicles out · {{ day.strftime('%d %b') }}</div><div class="v">{{ stats.vehicles_out_today }}</div>
+    <div class="s">this month: {{ stats.company_trips }} company trips · {{ stats.hired_trips }} hired</div></div>
+</div>
+<div class="grid g4" style="margin-top:16px">
+  <div class="stat"><div class="k">Requests this month</div><div class="v">{{ stats.month_requests }}</div><div class="s">{{ stats.month_rejected }} rejected / cancelled</div></div>
+  <div class="stat"><div class="k">Guests this month</div><div class="v">{{ stats.month_guests }}</div></div>
+  <div class="stat"><div class="k">Hotel stays this month</div><div class="v">{{ stats.hotel_guests }}</div><div class="s">₹{{ '{:,.0f}'.format(stats.hotel_cost) }} booked</div></div>
+  <div class="stat"><div class="k">Hired vehicle spend this month</div><div class="v">₹{{ '{:,.0f}'.format(stats.hired_cost) }}</div></div>
+</div>
+
+<div class="grid g3" style="margin-top:16px">
+  <section class="card span2">
+    <div class="card-head"><h2>Room board · {{ day.strftime('%a %d %b %Y') }}</h2>
+      <div class="legend"><span><i style="background:#bfe5cb"></i>free</span><span><i style="background:#f6c6bd"></i>occupied</span><span><i style="background:#d9dee6"></i>maintenance</span></div></div>
+    {% for house, rooms in houses.items() %}
+      <h3 style="margin:14px 0 8px">{{ house.name }}{% if not house.is_active %} <span class="badge">inactive</span>{% endif %} <span class="muted small">{{ house.location or '' }}</span></h3>
+      <div class="rooms">
+      {% for room, guests in rooms %}
+        <div class="room {{ 'busy' if guests else ('off' if not room.is_active else 'free') }}">
+          <b>{{ room.room_no }}</b><span class="muted">{{ room.room_type }} · {{ room.capacity }} bed{{ 's' if room.capacity != 1 }}</span>
+          {% for gst in guests %}<div><a href="{{ url_for('guest_house.request_view', req_id=gst.request_id) }}">{{ gst.name }}</a>
+            <span class="muted">→ {{ gst.departure.strftime('%d %b') }}</span></div>{% endfor %}
+          {% if not room.is_active and not guests %}<div>{{ room.remarks or 'under maintenance' }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}<p class="muted">No rooms yet. Add them under <a href="{{ url_for('guest_house.masters', kind='guest-houses') }}">Masters</a>.</p>{% endfor %}
+  </section>
+  <div class="stack">
+    <section class="card">
+      <h2>Arrivals - next 7 days</h2>
+      {% for gst in upcoming %}
+        <div class="small" style="padding:5px 0;border-bottom:1px solid var(--border)"><b>{{ dt(gst.arrival, '%a %d %b %H:%M') }}</b> · {{ gst.name }}
+          <div class="muted"><a href="{{ url_for('guest_house.request_view', req_id=gst.request_id) }}">{{ gst.request.req_no }}</a> · {{ gst.stay_label }}</div></div>
+      {% else %}<p class="muted small">No arrivals.</p>{% endfor %}
+    </section>
+    <section class="card bars">
+      <h2>Requests by department (month)</h2>
+      {% set top = by_dept[0][1] if by_dept else 1 %}
+      {% for dept, n in by_dept %}<div class="bar"><span class="small" style="background:none;height:auto">{{ dept or '-' }}</span><span style="width:{{ (100 * n / top)|round }}%"></span><b class="small">{{ n }}</b></div>
+      {% else %}<p class="muted small">No requests yet.</p>{% endfor %}
+    </section>
+  </div>
+</div>
+{% endblock %}

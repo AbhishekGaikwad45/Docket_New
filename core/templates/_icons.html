@@ -1,0 +1,45 @@
+{# Tile illustrations. Solid fills only: the same icon appears twice per page (tile + app switcher),
+   and gradient ids would collide. icon(name) - add a branch for a new app. #}
+{% macro icon(name) -%}
+{% if name == 'tasks' %}
+<svg viewBox="0 0 120 120" aria-hidden="true">
+  <path d="M18 70l12-34h60l12 34v26a6 6 0 0 1-6 6H24a6 6 0 0 1-6-6z" fill="#2563eb"/>
+  <path d="M18 70h26a16 16 0 0 0 32 0h26v26a6 6 0 0 1-6 6H24a6 6 0 0 1-6-6z" fill="#1d4ed8"/>
+  <rect x="36" y="18" width="48" height="54" rx="5" fill="#fff" stroke="#dbe3ef" stroke-width="2"/>
+  <rect x="44" y="28" width="32" height="5" rx="2.5" fill="#94a3b8"/>
+  <rect x="44" y="39" width="24" height="5" rx="2.5" fill="#cbd5e1"/>
+  <rect x="44" y="50" width="28" height="5" rx="2.5" fill="#cbd5e1"/>
+  <circle cx="90" cy="30" r="14" fill="#f59e0b"/>
+  <path d="M90 22v9l5 3" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+</svg>
+{% elif name == 'guest_house' %}
+<svg viewBox="0 0 120 120" aria-hidden="true">
+  <rect x="24" y="52" width="66" height="52" rx="4" fill="#0ea5e9"/>
+  <rect x="24" y="52" width="66" height="10" fill="#0284c7"/>
+  <path d="M14 56 57 20l43 36z" fill="#f97316"/>
+  <path d="M57 20l43 36H84z" fill="#ea580c"/>
+  <rect x="33" y="68" width="14" height="13" rx="2" fill="#e0f2fe"/>
+  <rect x="66" y="68" width="14" height="13" rx="2" fill="#e0f2fe"/>
+  <rect x="49" y="78" width="16" height="26" rx="2" fill="#075985"/>
+  <circle cx="61" cy="92" r="1.8" fill="#fde68a"/>
+  <circle cx="94" cy="88" r="14" fill="#fbbf24"/>
+  <circle cx="94" cy="88" r="5" fill="#fff"/>
+  <path d="M94 93v14m0-5h5" stroke="#b45309" stroke-width="3.5" stroke-linecap="round"/>
+</svg>
+{% elif name == 'admin' %}
+<svg viewBox="0 0 120 120" aria-hidden="true">
+  <rect x="18" y="22" width="84" height="76" rx="10" fill="#7c3aed"/>
+  <rect x="18" y="22" width="84" height="16" rx="8" fill="#6d28d9"/>
+  <circle cx="30" cy="30" r="3" fill="#c4b5fd"/><circle cx="40" cy="30" r="3" fill="#c4b5fd"/>
+  <rect x="32" y="52" width="56" height="5" rx="2.5" fill="#ddd6fe"/>
+  <rect x="32" y="68" width="56" height="5" rx="2.5" fill="#ddd6fe"/>
+  <rect x="32" y="84" width="56" height="5" rx="2.5" fill="#ddd6fe"/>
+  <circle cx="48" cy="54.5" r="7" fill="#fff"/><circle cx="74" cy="70.5" r="7" fill="#fff"/><circle cx="56" cy="86.5" r="7" fill="#fff"/>
+</svg>
+{% else %}
+<svg viewBox="0 0 120 120" aria-hidden="true">
+  <rect x="22" y="22" width="34" height="34" rx="8" fill="#0ea5e9"/><rect x="64" y="22" width="34" height="34" rx="8" fill="#22c55e"/>
+  <rect x="22" y="64" width="34" height="34" rx="8" fill="#f59e0b"/><rect x="64" y="64" width="34" height="34" rx="8" fill="#ef4444"/>
+</svg>
+{% endif %}
+{%- endmacro %}

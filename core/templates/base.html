@@ -1,0 +1,75 @@
+{% from "_icons.html" import icon %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}Docket{% endblock %} · Docket</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='img/logo.svg') }}">
+</head>
+<body>
+{% if session.get('impersonator') %}
+<div class="impersonating">Viewing as <b>{{ current_user.name }}</b>.
+  <form method="post" action="{{ url_for('auth.stop_impersonating') }}" style="display:inline">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button>Return to admin</button></form>
+</div>
+{% endif %}
+<header class="topbar">
+  <button class="tb-apps" id="appsBtn" aria-label="All applications" aria-expanded="false">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+  </button>
+  <a class="tb-logo" href="{{ url_for('main.home') }}" aria-label="Docket home"><img src="{{ url_for('static', filename='img/logo.svg') }}" alt=""><span>Docket</span></a>
+  <nav class="switcher" id="switcher" aria-label="Applications">
+    <a href="{{ url_for('main.tasks') }}">{{ icon('tasks') }}Requests &amp; Tasks</a>
+    {% for app in visible_apps(current_user) %}
+      <a href="{{ url_for(app.home_endpoint) }}">{{ icon(app.icon) }}{{ app.name }}</a>
+    {% endfor %}
+    {% if current_user.is_superadmin or app_admin_anywhere() %}<a href="{{ url_for('admin.index') }}">{{ icon('admin') }}Administration</a>{% endif %}
+  </nav>
+  <span class="spacer"></span>
+  <div class="tb-actions">
+    {% set n = unread_count() %}
+    <div class="menu" id="bellMenu">
+      <button class="tb-icon tb-bell" aria-label="Notifications{{ ' (' ~ n ~ ' unread)' if n }}" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        {% if n %}<span class="count">{{ n if n < 100 else '99+' }}</span>{% endif %}
+      </button>
+      <div class="menu-panel notes-panel">
+        <div class="menu-head row"><b>Notifications</b><span class="spacer"></span>
+          {% if n %}<form method="post" action="{{ url_for('main.read_all') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="btn-link small">Mark all read</button></form>{% endif %}</div>
+        {% for note in recent_notes() %}
+          <a href="{{ url_for('main.open_notification', note_id=note.id) }}" class="note {{ 'unread' if not note.read_at }}">
+            {% if note.kind == 'action' and not note.read_at %}<span class="badge b-pending">Action</span> {% endif %}{{ note.title }}
+            <div class="small muted">{{ note.created_at.strftime('%d %b %H:%M') }}</div></a>
+        {% else %}<div class="empty">You're all caught up.</div>{% endfor %}
+        <a href="{{ url_for('main.tasks', tab='updates') }}" class="small" style="text-align:center">See all</a>
+      </div>
+    </div>
+    <div class="menu" id="userMenu">
+      <button class="avatar" aria-label="Account menu" aria-expanded="false">{{ current_user.initials }}</button>
+      <div class="menu-panel">
+        <div class="menu-head"><b>{{ current_user.name }}</b><div class="small muted">{{ current_user.designation or '' }}{% if current_user.department %} · {{ current_user.department }}{% endif %}</div></div>
+        <a href="{{ url_for('main.person', emp_id=current_user.employee_id) }}">My profile</a>
+        <a href="{{ url_for('main.tasks') }}">Requests &amp; Tasks</a>
+        {% if current_user.is_superadmin or app_admin_anywhere() %}<a href="{{ url_for('admin.index') }}">Administration</a>{% endif %}
+        <a href="{{ url_for('auth.logout') }}">Sign out</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}<div class="flashes" role="status">{% for cat, msg in messages %}<div class="flash flash-{{ cat }}">{{ msg }}</div>{% endfor %}</div>{% endif %}
+{% endwith %}
+
+<main class="{% block main_class %}page{% endblock %}" id="main">
+  {% block body %}<div class="wrap">{% block content %}{% endblock %}</div>{% endblock %}
+</main>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

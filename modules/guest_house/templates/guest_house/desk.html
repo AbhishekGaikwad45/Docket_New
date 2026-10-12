@@ -1,0 +1,42 @@
+{% extends "guest_house/_layout.html" %}
+{% from "guest_house/_macros.html" import request_table, dt %}
+{% block title %}Admin desk{% endblock %}
+{% block heading %}Administration desk{% endblock %}
+{% block page %}
+<section class="card">
+  <div class="card-head"><h2>To arrange ({{ to_arrange|length }})</h2><span class="muted small">Approved requests waiting for rooms / hotels / vehicles / tickets</span></div>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Request</th><th>Applicant</th><th>Guests</th><th>Arrival</th><th>Needs</th><th>Approved</th><th></th></tr></thead>
+    <tbody>{% for r in to_arrange %}
+      {% set soon = r.first_arrival and (r.first_arrival - now).total_seconds() < 86400 %}
+      <tr>
+        <td><a href="{{ url_for('guest_house.request_view', req_id=r.id) }}"><b>{{ r.req_no }}</b></a></td>
+        <td>{{ r.applicant.name }}<div class="small muted">{{ r.department or '' }}</div></td>
+        <td>{{ r.guests|length }}</td>
+        <td class="nowrap">{{ dt(r.first_arrival) }}{% if soon %} <span class="badge b-rejected">within 24h</span>{% endif %}</td>
+        <td class="small">{% for f, l in [('need_guest_house','GH'),('need_hotel','Hotel'),('need_vehicle','Vehicle'),('need_food','Food'),('need_ticket','Ticket')] if r[f] %}<span class="badge">{{ l }}</span> {% endfor %}</td>
+        <td class="small nowrap">{{ dt(r.decided_at) }}</td>
+        <td class="right"><a class="btn btn-sm btn-primary" href="{{ url_for('guest_house.arrange', req_id=r.id) }}">Arrange</a></td>
+      </tr>
+    {% else %}<tr><td colspan="7" class="empty">Nothing to arrange.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<section class="card" style="margin-top:16px">
+  <h2>In house now ({{ in_house|length }})</h2>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Guest</th><th>Request</th><th>Stay</th><th>Checked in</th><th>Due out</th><th></th></tr></thead>
+    <tbody>{% for gst in in_house %}
+      <tr><td>{{ gst.name }}</td><td><a href="{{ url_for('guest_house.request_view', req_id=gst.request_id) }}">{{ gst.request.req_no }}</a></td>
+        <td>{{ gst.stay_label }}</td><td class="nowrap">{{ dt(gst.checked_in_at) }}</td>
+        <td class="nowrap">{{ dt(gst.departure) }}{% if gst.departure < now %} <span class="badge b-rejected">overstay</span>{% endif %}</td>
+        <td class="right"><form method="post" action="{{ url_for('guest_house.guest_status', guest_id=gst.id, action='check-out') }}">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ url_for('guest_house.desk') }}">
+          <button class="btn btn-sm">Check out</button></form></td></tr>
+    {% else %}<tr><td colspan="6" class="empty">No one checked in.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<section style="margin-top:16px"><h2 style="margin-bottom:10px">Arranged - upcoming / ongoing</h2>{{ request_table(arranged, 'Nothing arranged.') }}</section>
+<section style="margin-top:16px"><h2 style="margin-bottom:10px">Still in approval (heads-up)</h2>{{ request_table(awaiting_approval, 'None.') }}</section>
+{% endblock %}

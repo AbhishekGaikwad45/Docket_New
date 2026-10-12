@@ -1,0 +1,40 @@
+{% extends "guest_house/_layout.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block heading %}Masters - {{ title }}{% endblock %}
+{% macro input(name, label, ftype, required, value) %}
+  {% if ftype == 'guest_house' %}
+    <select name="{{ name }}" {{ 'required' if required }}><option value="">-</option>{% for h in guest_houses %}<option value="{{ h.id }}" {{ 'selected' if value == h.id }}>{{ h.name }}</option>{% endfor %}</select>
+  {% elif ftype is sequence and ftype is not string %}
+    <select name="{{ name }}">{% for c in ftype %}<option {{ 'selected' if value == c }}>{{ c }}</option>{% endfor %}</select>
+  {% else %}
+    <input type="{{ 'number' if ftype == 'int' else 'text' }}" {{ 'min=1' if ftype == 'int' }} name="{{ name }}" value="{{ value if value is not none else '' }}" {{ 'required' if required }}>
+  {% endif %}
+{% endmacro %}
+{% block page %}
+<nav class="row" style="margin-bottom:14px">
+  {% for k, m in masters.items() %}<a class="btn {{ 'btn-primary' if k == kind }}" href="{{ url_for('guest_house.masters', kind=k) }}">{{ m[1] }}</a>{% endfor %}
+</nav>
+<form method="post" class="card" style="margin-bottom:16px">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">{% if editing %}<input type="hidden" name="id" value="{{ editing.id }}">{% endif %}
+  <h3>{{ 'Edit' if editing else 'Add' }} {{ title|lower }}</h3>
+  <div class="grid g4" style="margin-top:10px">
+    {% for name, label, ftype, required in fields %}
+      <div class="field"><label class="{{ 'req' if required }}">{{ label }}</label>{{ input(name, label, ftype, required, editing[name] if editing else none) }}</div>
+    {% endfor %}
+  </div>
+  <div class="row"><button class="btn btn-primary">{{ 'Save' if editing else 'Add' }}</button>{% if editing %}<a class="btn" href="{{ url_for('guest_house.masters', kind=kind) }}">Cancel</a>{% endif %}</div>
+</form>
+<div class="tbl-wrap"><table class="tbl">
+  <thead><tr>{% for name, label, ftype, required in fields %}<th>{{ label }}</th>{% endfor %}<th>Status</th><th></th></tr></thead>
+  <tbody>{% for item in items %}
+    <tr class="{{ '' if item.is_active else 'off' }}">
+      {% for name, label, ftype, required in fields %}<td>{{ item.guest_house.name if name == 'guest_house_id' else (item[name] if item[name] is not none else '') }}</td>{% endfor %}
+      <td><span class="badge {{ 'b-approved' if item.is_active else '' }}">{{ 'Active' if item.is_active else ('Maintenance' if kind == 'rooms' else 'Inactive') }}</span></td>
+      <td class="right nowrap"><a class="btn btn-sm" href="?edit={{ item.id }}">Edit</a>
+        <form method="post" style="display:inline"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="id" value="{{ item.id }}"><input type="hidden" name="action" value="toggle">
+          <button class="btn btn-sm">{{ 'Deactivate' if item.is_active else 'Activate' }}</button></form></td>
+    </tr>
+  {% else %}<tr><td colspan="{{ fields|length + 2 }}" class="empty">Nothing yet.</td></tr>{% endfor %}</tbody>
+</table></div>
+<p class="help">Entries are never deleted (old requests refer to them) - deactivate instead. A deactivated room is shown as under maintenance and can't be allocated.</p>
+{% endblock %}

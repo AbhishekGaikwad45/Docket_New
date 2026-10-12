@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ emp.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="crumbs"><a href="{{ url_for('main.home') }}">Home</a> / Directory</div><h1>{{ emp.name }}</h1>
+  <div class="muted">{{ emp.designation or '' }}{% if emp.department %} · {{ emp.department }}{% endif %}</div></div>
+  {% if current_user.is_superadmin %}<a class="btn" href="{{ url_for('admin.employee_edit', emp_id=emp.employee_id) }}">Edit in admin</a>{% endif %}
+</div>
+<div class="grid g2">
+  <div class="card"><dl class="kv">
+    <dt>Employee ID</dt><dd>{{ emp.employee_id }}</dd>
+    <dt>Email</dt><dd>{% if emp.email %}<a href="mailto:{{ emp.email }}">{{ emp.email }}</a>{% else %}-{% endif %}</dd>
+    <dt>Phone</dt><dd>{{ emp.phone or '-' }}</dd>
+    <dt>Status</dt><dd>{{ emp.status }}</dd>
+    <dt>Reports to</dt><dd>{% if emp.manager %}<a href="{{ url_for('main.person', emp_id=emp.manager.employee_id) }}">{{ emp.manager.name }}</a>{% else %}-{% endif %}</dd>
+  </dl></div>
+  <div class="card"><h2>Direct reports ({{ reports|length }})</h2>
+    {% for r in reports %}<div><a href="{{ url_for('main.person', emp_id=r.employee_id) }}">{{ r.name }}</a> <span class="muted small">{{ r.designation or '' }}</span></div>
+    {% else %}<div class="muted">None</div>{% endfor %}
+  </div>
+</div>
+{% endblock %}

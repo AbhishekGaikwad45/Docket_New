@@ -1,0 +1,22 @@
+{% macro status(req) %}<span class="badge b-{{ req.status }}">{{ req.status_label }}</span>{% endmacro %}
+{% macro dt(v, fmt='%d %b %Y %H:%M') %}{{ v.strftime(fmt) if v else '' }}{% endmacro %}
+{% macro yn(v) %}{{ 'Yes' if v else 'No' }}{% endmacro %}
+{% macro dtl(v) %}{{ v.strftime('%Y-%m-%dT%H:%M') if v else '' }}{% endmacro %}
+
+{% macro request_table(reqs, empty='No requests.') %}
+<div class="tbl-wrap"><table class="tbl">
+  <thead><tr><th>Request</th><th>Applicant</th><th>Guests</th><th>Arrival</th><th>Departure</th><th>Needs</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for r in reqs %}
+    <tr>
+      <td><a href="{{ url_for('guest_house.request_view', req_id=r.id) }}"><b>{{ r.req_no }}</b></a><div class="small muted">{{ r.visit_type }}</div></td>
+      <td>{{ r.applicant.name }}<div class="small muted">{{ r.department or '' }}</div></td>
+      <td>{{ r.guests|length }}<div class="small muted">{{ r.guests|map(attribute='name')|list|join(', ')|truncate(40) }}</div></td>
+      <td class="nowrap">{{ dt(r.first_arrival) }}</td><td class="nowrap">{{ dt(r.last_departure) }}</td>
+      <td class="small">{% for f, l in [('need_guest_house','GH'),('need_hotel','Hotel'),('need_vehicle','Vehicle'),('need_food','Food'),('need_ticket','Ticket')] if r[f] %}<span class="badge">{{ l }}</span> {% endfor %}</td>
+      <td>{{ status(r) }}</td>
+    </tr>
+  {% else %}<tr><td colspan="7" class="empty">{{ empty }}</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{% endmacro %}

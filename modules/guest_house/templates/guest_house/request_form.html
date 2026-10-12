@@ -1,0 +1,103 @@
+{% extends "guest_house/_layout.html" %}
+{% from "guest_house/_macros.html" import dtl %}
+{% block title %}Guest requisition{% endblock %}
+{% block heading %}{{ 'Edit & resubmit ' ~ req.req_no if req.id else 'Guest requisition form' }}{% endblock %}
+{% macro guest_row(gst) %}
+  <tr data-row>
+    <td class="rownum muted"></td>
+    <td><input type="text" name="g_name" value="{{ gst.name or '' }}" aria-label="Guest name" required></td>
+    <td><select name="g_gender" aria-label="Gender" style="min-width:90px">{% for x in ['', 'Male', 'Female', 'Other'] %}<option {{ 'selected' if (gst.gender or '') == x }}>{{ x }}</option>{% endfor %}</select></td>
+    <td><input type="tel" name="g_mobile" value="{{ gst.mobile or '' }}" aria-label="Mobile"></td>
+    <td><input type="email" name="g_email" value="{{ gst.email or '' }}" aria-label="Email"></td>
+    <td><input type="text" name="g_org" value="{{ gst.organisation or '' }}" aria-label="Organisation" placeholder="same as above"></td>
+    <td><input type="text" name="g_designation" value="{{ gst.designation or '' }}" aria-label="Designation"></td>
+    <td><input type="datetime-local" name="g_arrival" value="{{ dtl(gst.arrival) }}" aria-label="Arrival" required></td>
+    <td><input type="datetime-local" name="g_departure" value="{{ dtl(gst.departure) }}" aria-label="Departure" required></td>
+    <td><button type="button" class="btn btn-sm btn-bad" data-remove aria-label="Remove guest">✕</button></td>
+  </tr>
+{% endmacro %}
+{% macro need(field, question, note=None, note_label='', note_help='') %}
+  <div class="need" data-need>
+    <div class="q">{{ question }}</div>
+    <div class="yn" role="radiogroup" aria-label="{{ question }}">
+      <input type="radio" id="{{ field }}1" name="{{ field }}" value="1" {{ 'checked' if req[field] }}><label for="{{ field }}1">Yes</label>
+      <input type="radio" id="{{ field }}0" name="{{ field }}" value="0" {{ 'checked' if not req[field] }}><label for="{{ field }}0">No</label>
+    </div>
+    <div>{% if note %}<div data-if-yes><textarea name="{{ note }}" rows="2" placeholder="{{ note_label }}" aria-label="{{ note_label }}">{{ req[note] or '' }}</textarea>
+      {% if note_help %}<div class="help">{{ note_help }}</div>{% endif %}</div>{% endif %}</div>
+  </div>
+{% endmacro %}
+{% block page %}
+{% if copy_of %}<div class="flash flash-info">Copied from {{ copy_of.req_no }} - set the new dates for each guest.</div>{% endif %}
+<form method="post" class="stack" novalidate>
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+  <section class="card">
+    <h2>Visit</h2>
+    <div class="grid g3">
+      <div class="field"><label class="req" for="visit_type">Visit type</label>
+        <select id="visit_type" name="visit_type" required><option value="">Select…</option>
+          {% for v in visit_types %}<option {{ 'selected' if req.visit_type == v }}>{{ v }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="organisation">Guests' organisation</label>
+        <input type="text" id="organisation" name="organisation" value="{{ req.organisation or '' }}" placeholder="e.g. IMS RC Auditor, ABC Ltd."></div>
+      <div class="field"><label class="req" for="expenses_by">Expenses borne by</label>
+        <select id="expenses_by" name="expenses_by" data-switch="form">{% for v in expenses_by %}<option value="{{ v }}" {{ 'selected' if req.expenses_by == v }}>{{ v }}</option>{% endfor %}</select></div>
+      <div class="field span2"><label class="req" for="purpose">Purpose of visit</label>
+        <textarea id="purpose" name="purpose" rows="2" required>{{ req.purpose or '' }}</textarea></div>
+      <div class="field" data-when="Department (cost centre)"><label class="req" for="cost_centre">Cost centre</label>
+        <input type="text" id="cost_centre" name="cost_centre" value="{{ req.cost_centre or '' }}"></div>
+    </div>
+  </section>
+
+  <section class="card" data-repeater data-min="1" data-max="{{ max_guests }}">
+    <div class="card-head"><h2>Guests</h2>
+      <div class="row"><button type="button" class="btn btn-sm" id="copyDates" title="Fill empty dates from guest 1">Copy guest 1 dates to all</button>
+        <button type="button" class="btn btn-sm btn-primary" data-add>+ Add guest</button></div></div>
+    <div class="tbl-wrap"><table class="tbl compact">
+      <thead><tr><th>#</th><th class="req">Name</th><th>Gender</th><th>Mobile</th><th>Email</th><th>Organisation</th><th>Designation</th><th class="req">Arrival</th><th class="req">Departure</th><th></th></tr></thead>
+      <tbody data-rows>{% for gst in guests %}{{ guest_row(gst) }}{% endfor %}</tbody>
+    </table></div>
+    <template>{{ guest_row({}) }}</template>
+    <p class="help">Up to {{ max_guests }} guests. Each guest can have different dates.</p>
+  </section>
+
+  <section class="card">
+    <h2>Requirements</h2>
+    <p class="help" style="margin-top:-6px">Just say what is needed - the administration desk allocates the room, hotel, vehicle and tickets after approval.</p>
+    {{ need('need_guest_house', 'Guest house required?') }}
+    {{ need('need_hotel', 'Hotel stay required?') }}
+    {{ need('need_vehicle', 'Vehicle required?', 'vehicle_note', 'Pickup / drop points and timings, local use…', 'e.g. Pickup from Ratnagiri station 17 Mar 10:30, local plant visits, drop on 19 Mar.') }}
+    {{ need('need_food', 'Food arrangement?', 'food_note', 'Veg / non-veg / Jain, allergies, meals needed…') }}
+    {{ need('need_ticket', 'Travel ticket?', 'ticket_note', 'From - to, date, mode (flight/train/bus), class…') }}
+    <div class="field" style="margin-top:12px"><label for="other_note">Anything else</label>
+      <textarea id="other_note" name="other_note" rows="2" placeholder="Special requests, accessibility needs, split between guest house and hotel…">{{ req.other_note or '' }}</textarea></div>
+  </section>
+
+  <section class="card">
+    <h2>Approval route</h2>
+    {% for step in chain %}
+      <div class="row" style="padding:4px 0"><span class="badge {{ 'b-cancelled' if step.error else ('' if step.note else 'b-pending') }}">{{ loop.index }}. {{ step.label }}</span>
+        {% if step.error %}<span style="color:var(--bad)">{{ step.error }}</span>
+        {% elif step.note %}<span class="muted">{{ step.note }}</span>
+        {% else %}{{ step.approvers|map(attribute='name')|join(' / ') }}{% endif %}</div>
+    {% else %}<p class="muted">No approval needed - goes straight to the administration desk.</p>{% endfor %}
+    <p class="help">Shown for your current choices; some steps apply only when e.g. a hotel is requested.</p>
+  </section>
+
+  <div class="row"><button class="btn btn-primary">{{ 'Resubmit' if req.id else 'Submit request' }}</button>
+    <a class="btn" href="{{ url_for('guest_house.my_requests') }}">Cancel</a></div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById("copyDates").addEventListener("click", () => {
+  const rows = [...document.querySelectorAll("[data-rows] [data-row]")];
+  if (!rows.length) return;
+  const a = rows[0].querySelector("[name=g_arrival]").value, d = rows[0].querySelector("[name=g_departure]").value;
+  rows.slice(1).forEach(r => {
+    const ra = r.querySelector("[name=g_arrival]"), rd = r.querySelector("[name=g_departure]");
+    if (!ra.value) ra.value = a; if (!rd.value) rd.value = d;
+  });
+});
+</script>
+{% endblock %}

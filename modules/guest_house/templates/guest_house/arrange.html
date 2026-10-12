@@ -1,0 +1,94 @@
+{% extends "guest_house/_layout.html" %}
+{% from "guest_house/_macros.html" import dt, dtl, yn %}
+{% block title %}Arrange {{ req.req_no }}{% endblock %}
+{% block heading %}Arrange {{ req.req_no }}{% endblock %}
+{% block actions %}<a class="btn" href="{{ url_for('guest_house.request_view', req_id=req.id) }}">Back to request</a>{% endblock %}
+{% macro trip_row(t) %}
+  <tr data-row class="trip-row">
+    <td class="rownum muted"></td>
+    <td><select name="t_type">{% for x in trip_types %}<option {{ 'selected' if t.trip_type == x }}>{{ x }}</option>{% endfor %}</select>
+      <input type="text" name="t_pickup" value="{{ t.pickup or '' }}" placeholder="From" style="margin-top:4px">
+      <input type="text" name="t_drop" value="{{ t.drop or '' }}" placeholder="To" style="margin-top:4px"></td>
+    <td><input type="datetime-local" name="t_start" value="{{ dtl(t.start) }}" aria-label="Start">
+      <input type="datetime-local" name="t_end" value="{{ dtl(t.end) }}" aria-label="End" style="margin-top:4px"></td>
+    <td style="min-width:240px">
+      <select name="t_source" data-switch=".trip-row"><option value="company" {{ 'selected' if t.source != 'hired' }}>Company vehicle</option><option value="hired" {{ 'selected' if t.source == 'hired' }}>Hired vehicle</option></select>
+      <div data-when="company" style="margin-top:4px"><select name="t_vehicle"><option value="">- vehicle -</option>
+        {% for v in vehicles %}<option value="{{ v.id }}" {{ 'selected' if t.vehicle_id == v.id }}>{{ v.reg_no }} · {{ v.model or v.vehicle_type }} · {{ v.seats }} seats</option>{% endfor %}</select></div>
+      <div data-when="hired" style="margin-top:4px">
+        <input type="text" name="t_vendor" value="{{ t.vendor or '' }}" placeholder="Vendor / travels">
+        <div class="row" style="margin-top:4px;flex-wrap:nowrap"><input type="text" name="t_hired_no" value="{{ t.hired_vehicle_no or '' }}" placeholder="Vehicle no.">
+          <input type="text" name="t_hired_type" value="{{ t.hired_vehicle_type or '' }}" placeholder="Type (Innova…)"></div></div>
+    </td>
+    <td><input type="text" name="t_driver" value="{{ t.driver_name or '' }}" placeholder="Driver (blank = from master)">
+      <input type="tel" name="t_driver_phone" value="{{ t.driver_phone or '' }}" placeholder="Driver phone" style="margin-top:4px"></td>
+    <td><input type="number" step="0.01" min="0" name="t_cost" value="{{ t.cost or '' }}" placeholder="Cost" style="min-width:90px">
+      <input type="text" name="t_remarks" value="{{ t.remarks or '' }}" placeholder="Remarks" style="margin-top:4px"></td>
+    <td><button type="button" class="btn btn-sm btn-bad" data-remove aria-label="Remove trip">✕</button></td>
+  </tr>
+{% endmacro %}
+{% block page %}
+<form method="post" class="stack">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <section class="card">
+    <div class="card-head"><h2>Stay - per guest</h2>
+      <span class="small muted">Asked: guest house {{ yn(req.need_guest_house) }} · hotel {{ yn(req.need_hotel) }}{% if req.other_note %} · “{{ req.other_note }}”{% endif %}</span></div>
+    <div class="tbl-wrap"><table class="tbl compact">
+      <thead><tr><th>Guest</th><th>Arrival / departure</th><th>Stay</th><th>Allocation</th><th>Remarks</th></tr></thead>
+      <tbody>
+      {% for gst in req.guests %}{% set p = 'g' ~ gst.id ~ '_' %}
+        <tr class="guest-row">
+          <td><b>{{ gst.name }}</b><div class="small muted">{{ gst.gender or '' }} {{ gst.mobile or '' }}</div>
+            {% if gst.checked_out_at %}<span class="badge">checked out</span>{% elif gst.checked_in_at %}<span class="badge b-approved">in house</span>{% endif %}</td>
+          <td><input type="datetime-local" name="{{ p }}arrival" value="{{ dtl(gst.arrival) }}" {{ 'readonly' if gst.checked_in_at }} aria-label="Arrival">
+            <input type="datetime-local" name="{{ p }}departure" value="{{ dtl(gst.departure) }}" style="margin-top:4px" aria-label="Departure"></td>
+          <td><select name="{{ p }}stay_type" data-switch=".guest-row" aria-label="Stay type"><option value="">- choose -</option>
+            {% for k, v in stay_types.items() %}<option value="{{ k }}" {{ 'selected' if gst.stay_type == k }}>{{ v }}</option>{% endfor %}</select></td>
+          <td style="min-width:300px">
+            <div data-when="guest_house"><select name="{{ p }}room_id" aria-label="Room"><option value="">- room -</option>
+              {% for room in rooms %}{% set clash = busy.get(gst.id, {}).get(room.id) %}
+                <option value="{{ room.id }}" {{ 'selected' if gst.room_id == room.id }} {{ 'disabled' if clash and gst.room_id != room.id }}>
+                  {{ room }} · {{ room.room_type }} · {{ room.capacity }} bed{{ 's' if room.capacity != 1 }}{% if clash %} - taken by {{ clash[0].name }} ({{ clash[0].request.req_no }}){% endif %}</option>
+              {% endfor %}</select>
+              <div class="help">Rooms held by other requests for these dates are greyed out. Guests of this request may share up to the bed count.</div></div>
+            <div data-when="hotel"><select name="{{ p }}hotel_id" aria-label="Hotel"><option value="">- hotel -</option>
+              {% for h in hotels %}<option value="{{ h.id }}" {{ 'selected' if gst.hotel_id == h.id }}>{{ h }}{% if h.tariff %} · {{ h.tariff }}{% endif %}</option>{% endfor %}</select>
+              <div class="row" style="margin-top:4px;flex-wrap:nowrap">
+                <input type="text" name="{{ p }}booking_ref" value="{{ gst.hotel_booking_ref or '' }}" placeholder="Booking ref">
+                <input type="text" name="{{ p }}hotel_room_no" value="{{ gst.hotel_room_no or '' }}" placeholder="Room no.">
+                <input type="number" step="0.01" min="0" name="{{ p }}hotel_cost" value="{{ gst.hotel_cost or '' }}" placeholder="Cost"></div></div>
+            <div data-when="none,"><span class="muted small">-</span></div>
+          </td>
+          <td><input type="text" name="{{ p }}remarks" value="{{ gst.remarks or '' }}" aria-label="Remarks"></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="card" data-repeater>
+    <div class="card-head"><h2>Vehicle trips</h2><button type="button" class="btn btn-sm btn-primary" data-add>+ Add trip</button></div>
+    <p class="help" style="margin-top:-6px">Asked: {{ yn(req.need_vehicle) }}{% if req.vehicle_note %} - “{{ req.vehicle_note }}”{% endif %}. If no company vehicle is free for the slot, switch the trip to <b>Hired</b> and enter the vendor details.</p>
+    <div class="tbl-wrap"><table class="tbl compact">
+      <thead><tr><th>#</th><th>Trip</th><th>Start / end</th><th>Vehicle</th><th>Driver</th><th>Cost / remarks</th><th></th></tr></thead>
+      <tbody data-rows>{% for t in req.trips %}{{ trip_row(t) }}{% endfor %}</tbody>
+    </table></div>
+    <template>{{ trip_row({}) }}</template>
+  </section>
+
+  <section class="card grid g2">
+    <div class="field"><label for="food_arrangement">Food arrangement</label>
+      <div class="help" style="margin:-2px 0 4px">Asked: {{ yn(req.need_food) }}{% if req.food_note %} - “{{ req.food_note }}”{% endif %}</div>
+      <textarea id="food_arrangement" name="food_arrangement" rows="3">{{ req.food_arrangement or '' }}</textarea></div>
+    <div class="field"><label for="ticket_arrangement">Ticket arrangement</label>
+      <div class="help" style="margin:-2px 0 4px">Asked: {{ yn(req.need_ticket) }}{% if req.ticket_note %} - “{{ req.ticket_note }}”{% endif %}</div>
+      <textarea id="ticket_arrangement" name="ticket_arrangement" rows="3" placeholder="PNR / flight no., timings, fare…">{{ req.ticket_arrangement or '' }}</textarea></div>
+    <div class="field span2"><label for="desk_remarks">Desk remarks</label><textarea id="desk_remarks" name="desk_remarks" rows="2">{{ req.desk_remarks or '' }}</textarea></div>
+  </section>
+
+  <div class="row">
+    <button class="btn" name="action" value="save">Save draft</button>
+    <button class="btn btn-primary" name="action" value="finalize">{{ 'Save & notify requester' if req.status == 'arranged' else 'Confirm arrangement & notify' }}</button>
+  </div>
+</form>
+{% endblock %}

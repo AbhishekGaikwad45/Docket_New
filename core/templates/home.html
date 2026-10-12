@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}My Access{% endblock %}
+{% block main_class %}{% endblock %}
+{% block content %}
+<div class="home-head">
+  <h1>My Access</h1>
+  {% if banner %}
+    <a class="notice" href="{{ banner_url or '#' }}">{{ banner }}{% if banner_url %} <b>Click here</b>{% endif %}</a>
+  {% endif %}
+</div>
+<div class="tiles">
+  <a class="tile" href="{{ url_for('main.tasks') }}">
+    <div class="tile-wrap"><div class="tile-box">{{ icon('tasks') }}</div>
+      {% if task_count %}<span class="tile-badge" aria-label="{{ task_count }} pending">{{ task_count }}</span>{% endif %}</div>
+    Requests &amp; Tasks
+  </a>
+  {% for app in apps %}
+    <a class="tile" href="{{ url_for(app.home_endpoint) }}" title="{{ app.description }}">
+      <div class="tile-wrap"><div class="tile-box">{{ icon(app.icon) }}</div>
+        {% if badges[app.code] %}<span class="tile-badge">{{ badges[app.code] }}</span>{% endif %}</div>
+      {{ app.name }}
+    </a>
+  {% endfor %}
+  {% if current_user.is_superadmin or app_admin_anywhere() %}
+  <a class="tile" href="{{ url_for('admin.index') }}">
+    <div class="tile-wrap"><div class="tile-box">{{ icon('admin') }}</div></div>
+    Administration
+  </a>
+  {% endif %}
+</div>
+{% if not apps %}
+  <p class="muted" style="margin-top:40px">No applications have been opened to you yet. Ask your administrator for access.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,10 @@
+<div class="page-head"><div><div class="crumbs"><a href="{{ url_for('main.home') }}">Home</a> / Administration</div>
+  <h1>{{ heading }}</h1></div>{{ caller() if caller else '' }}</div>
+<nav class="tabs">
+  <a href="{{ url_for('admin.index') }}" class="{{ 'on' if active == 'index' }}">Overview</a>
+  {% if current_user.is_superadmin %}
+  <a href="{{ url_for('admin.employees') }}" class="{{ 'on' if active == 'employees' }}">Employees</a>
+  <a href="{{ url_for('admin.sync_page') }}" class="{{ 'on' if active == 'sync' }}">Sync / Import</a>
+  {% endif %}
+  <a href="{{ url_for('admin.apps') }}" class="{{ 'on' if active == 'apps' }}">Applications</a>
+</nav>

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Employee sync{% endblock %}
+{% block content %}
+{% set heading, active = "Employee sync / import", "sync" %}{% include "admin/_nav.html" %}
+<div class="grid g2">
+  <form method="post" class="card">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="mode" value="source">
+    <h2>Sync from Mantra (SQL Server)</h2>
+    {% if not odbc_ready %}<p class="flash flash-info">Set <code>SOURCE_ODBC</code> in <code>.env</code> and install <code>pyodbc</code> to enable.</p>{% endif %}
+    {% for view, label in views.items() %}
+      <label><input type="checkbox" name="views" value="{{ view }}" checked> {{ label|title }} <span class="muted small">dbo.{{ view }}</span></label>
+    {% endfor %}
+    <label><input type="checkbox" name="active_only" value="1"> Active employees only</label>
+    <label><input type="checkbox" name="deactivate_missing" value="1"> Mark employees missing from the feed as Inactive</label>
+    <button class="btn btn-primary" {{ 'disabled' if not odbc_ready }} style="margin-top:10px">Run sync</button>
+    <p class="help">Schedule nightly with <code>flask sync-employees</code>.</p>
+  </form>
+  <form method="post" enctype="multipart/form-data" class="card">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="mode" value="file">
+    <h2>Import a file (.xlsx / .csv)</h2>
+    <div class="field"><input type="file" name="file" accept=".xlsx,.xlsm,.csv" required></div>
+    <label><input type="checkbox" name="deactivate_missing" value="1"> Mark previously uploaded employees missing from this file as Inactive</label>
+    <button class="btn btn-primary" style="margin-top:10px">Import</button>
+    <p class="help">First row = headers. Recognised columns:</p>
+    <table class="tbl compact small"><tbody>{% for field, names in columns.items() %}<tr><td><b>{{ field }}</b></td><td>{{ names|join(', ') }}</td></tr>{% endfor %}</tbody></table>
+  </form>
+</div>
+{% if result %}
+<div class="card" style="margin-top:16px"><h2>Result</h2>
+  <div class="grid g6">{% for k, v in result.items() %}<div class="stat"><div class="k">{{ k.replace('_', ' ') }}</div><div class="v">{{ v }}</div></div>{% endfor %}</div>
+  {% if result.kept_staff %}<p class="help">"kept staff": rows skipped because a staff record with the same ID already exists (staff wins over associates/uploads).</p>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

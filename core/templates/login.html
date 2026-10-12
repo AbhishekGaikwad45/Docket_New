@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · Docket</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='img/logo.svg') }}">
+</head>
+<body>
+<div class="login">
+  <div class="login-card">
+    <div class="brand"><img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" width="48" height="48"><div><h1>Docket</h1><div class="small muted">{{ config.COMPANY_NAME }}</div></div></div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}<div class="flash flash-{{ cat }}">{{ msg }}</div>{% endfor %}
+    {% endwith %}
+
+    {% if otp_for %}
+      <form method="post" action="{{ url_for('auth.verify_otp') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <p class="muted">Enter the 6-digit code sent to the email registered for <b>{{ otp_for }}</b>.</p>
+        <div class="field"><label for="otp">Code</label>
+          <input type="text" id="otp" name="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" autofocus required></div>
+        <button class="btn btn-primary" style="width:100%">Verify &amp; sign in</button>
+        <p class="small"><a href="{{ url_for('auth.login') }}">Use a different employee ID</a></p>
+      </form>
+    {% else %}
+      <div class="login-tabs" role="tablist">
+        <button type="button" class="on" data-tab="emp" role="tab">Employee</button>
+        <button type="button" data-tab="pwd" role="tab">Administrator</button>
+      </div>
+      <form method="post" action="{{ url_for('auth.send_otp') }}" data-pane="emp">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div class="field"><label for="emp_id">Employee ID</label>
+          <input type="text" id="emp_id" name="emp_id" autocomplete="username" autofocus required></div>
+        <button class="btn btn-primary" style="width:100%">Send sign-in code</button>
+      </form>
+      <form method="post" action="{{ url_for('auth.password_login') }}" data-pane="pwd" hidden>
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div class="field"><label for="username">Username</label><input type="text" id="username" name="username" autocomplete="username" required></div>
+        <div class="field"><label for="password">Password</label><input type="password" id="password" name="password" autocomplete="current-password" required></div>
+        <button class="btn btn-primary" style="width:100%">Sign in</button>
+      </form>
+      <script>
+        document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => {
+          document.querySelectorAll("[data-tab]").forEach(x => x.classList.toggle("on", x === b));
+          document.querySelectorAll("[data-pane]").forEach(p => p.hidden = p.dataset.pane !== b.dataset.tab);
+        });
+      </script>
+    {% endif %}
+  </div>
+</div>
+</body>
+</html>

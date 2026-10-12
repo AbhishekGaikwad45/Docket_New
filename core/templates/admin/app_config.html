@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}{{ app.name }} configuration{% endblock %}
+{% macro who(gr) -%}
+  {%- if gr.subject_type == 'all' -%}Everyone
+  {%- elif gr.subject_type == 'employee' -%}{{ names.get(gr.subject_value, gr.subject_value) }} <span class="muted small">({{ gr.subject_value }})</span>
+  {%- else -%}Dept: {{ gr.subject_value }}{%- endif -%}
+{%- endmacro %}
+{% macro hidden(action, node=None) %}<input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="{{ action }}">{% if node %}<input type="hidden" name="node_id" value="{{ node.id }}">{% endif %}{% endmacro %}
+
+{% macro box(n) %}
+<li>
+  <div class="org-box {{ 'org-top' if not n.parent_id }}" data-drop-node="{{ n.id }}">
+    <div class="org-head">
+      <b>{{ n.label }}</b>
+      <div class="org-tags">
+        {% if n.condition %}<span class="badge b-returned" title="Applies only when this is true">Only if: {{ app.conditions.get(n.condition, n.condition) }}</span>{% endif %}
+        {% for d in n.entry_list %}<span class="badge b-arranged" title="Requests from this department start here">Entry: {{ d }}</span>{% endfor %}
+        {% if n.entry_all %}<span class="badge b-arranged">Entry: all other departments</span>{% endif %}
+      </div>
+    </div>
+    <div class="org-people">
+      {% for m in n.members %}
+        <form method="post" class="chip {{ '' if m.is_active else 'chip-off' }}">{{ hidden('remove_member', n) }}<input type="hidden" name="employee_id" value="{{ m.employee_id }}">
+          <span title="{{ m.designation or '' }} · {{ m.department or '' }}">{{ m.name }}</span>
+          {% if not m.is_active %}<span class="small">(inactive)</span>{% endif %}
+          <button aria-label="Remove {{ m.name }}">×</button></form>
+      {% else %}<div class="org-empty">Drop people here</div>{% endfor %}
+    </div>
+    <form method="post" class="row org-add">{{ hidden('add_member', n) }}
+      <input type="text" name="employee_id" data-emp placeholder="Add person…" aria-label="Add person to {{ n.label }}"><button class="btn btn-sm">Add</button></form>
+    <details class="org-edit">
+      <summary>Edit level</summary>
+      <form method="post">{{ hidden('update', n) }}
+        <label>Name</label><input type="text" name="label" value="{{ n.label }}" required>
+        <label style="margin-top:8px">Sits under</label>
+        <select name="parent_id"><option value="">- top of the chart -</option>
+          {% for o in nodes if o.id != n.id %}<option value="{{ o.id }}" {{ 'selected' if o.id == n.parent_id }}>{{ o.label }}</option>{% endfor %}</select>
+        <label style="margin-top:8px">Applies</label>
+        <select name="condition"><option value="">Always</option>
+          {% for k, v in app.conditions.items() %}<option value="{{ k }}" {{ 'selected' if n.condition == k }}>Only if: {{ v }}</option>{% endfor %}</select>
+        <label style="margin-top:8px">Requests start here for</label>
+        <div class="dept-list">
+          {% for d in departments %}<label><input type="checkbox" name="entry_departments" value="{{ d }}" {{ 'checked' if d in n.entry_list }}> {{ d }}</label>{% endfor %}
+        </div>
+        <label><input type="checkbox" name="entry_all" value="1" {{ 'checked' if n.entry_all }}> All departments not listed anywhere else</label>
+        <div class="row" style="margin-top:8px"><button class="btn btn-sm btn-primary">Save</button></div>
+      </form>
+      <form method="post" style="margin-top:6px">{{ hidden('delete', n) }}<button class="btn btn-sm btn-bad">Delete level</button>
+        <span class="help">Levels under it move up.</span></form>
+    </details>
+    <form method="post" class="org-child">{{ hidden('add') }}<input type="hidden" name="parent_id" value="{{ n.id }}">
+      <button class="btn-link small">+ Level below</button></form>
+  </div>
+  {% if n.children %}<ul>{% for c in n.children %}{{ box(c) }}{% endfor %}</ul>{% endif %}
+</li>
+{% endmacro %}
+
+{% block content %}
+{% set heading, active = app.name ~ " - configuration", "apps" %}{% include "admin/_nav.html" %}
+<nav class="tabs">
+  <a href="?tab=access" class="{{ 'on' if tab == 'access' }}">Access</a>
+  <a href="?tab=approvals" class="{{ 'on' if tab == 'approvals' }}">Approval org chart</a>
+  <a href="?tab=settings" class="{{ 'on' if tab == 'settings' }}">Settings</a>
+  <span class="spacer"></span><a href="{{ url_for(app.home_endpoint) }}">Open app →</a>
+</nav>
+
+{% if tab == 'access' %}
+<div class="grid g2">
+{% for perm, label in app.all_permissions.items() %}
+  <div class="card">
+    <h3>{{ label }}</h3><div class="small muted mono" style="margin-bottom:10px">{{ perm }}</div>
+    {% for gr in grants.get(perm, []) %}
+      <form method="post" class="row" style="justify-content:space-between;border-bottom:1px solid var(--border);padding:6px 0">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="remove" value="{{ gr.id }}">
+        <span>{{ who(gr) }}</span>
+        {% if perm != 'admin' or current_user.is_superadmin %}<button class="btn-link small">remove</button>{% endif %}
+      </form>
+    {% else %}<p class="muted small">Nobody yet{{ ' (super admins always have it)' if perm == 'admin' }}.</p>{% endfor %}
+    {% if perm != 'admin' or current_user.is_superadmin %}
+    <form method="post" class="row grant-row" style="margin-top:10px">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="permission" value="{{ perm }}">
+      <select name="subject_type" data-switch=".grant-row" style="width:130px">
+        {% for k, v in subject_types.items() %}<option value="{{ k }}" {{ 'selected' if k == 'employee' }}>{{ v }}</option>{% endfor %}</select>
+      <span data-when="employee" style="flex:1"><input type="text" name="employee_id" data-emp placeholder="Name or ID"></span>
+      <span data-when="department" style="flex:1"><select name="department">{% for d in departments %}<option>{{ d }}</option>{% endfor %}</select></span>
+      <span data-when="all" style="flex:1" class="muted small">every active employee</span>
+      <button class="btn btn-sm">Grant</button>
+    </form>
+    {% endif %}
+  </div>
+{% endfor %}
+</div>
+
+{% elif tab == 'approvals' %}
+<div class="org-workspace">
+  <div class="stack" style="min-width:0">
+    <div class="card">
+      <div class="card-head"><h2>Approval org chart</h2>
+        <form method="post">{{ hidden('add') }}<button class="btn btn-sm">+ Top level</button></form></div>
+      <p class="help" style="margin-top:-6px">Approvals run <b>bottom to top</b>. A request enters at the deepest box tagged with the applicant's department
+        (or the box above the applicant, if they're in the chart) and climbs to the top. Anyone in a box can approve for it.
+        Changes apply to new submissions; requests already in approval keep their approvers.</p>
+      <div class="org-scroll">
+        {% if roots %}<ul class="org">{% for r in roots %}{{ box(r) }}{% endfor %}</ul>
+        {% else %}<div class="empty">No levels yet - requests are approved immediately. Add a top level to start.</div>{% endif %}
+      </div>
+    </div>
+    <form class="card" method="get">
+      <input type="hidden" name="tab" value="approvals">
+      <h3>Test a route</h3>
+      <div class="row" style="margin-top:8px"><input type="text" name="preview" data-emp value="{{ preview_emp.employee_id if preview_emp else '' }}" placeholder="Employee name or ID" style="max-width:280px"><button class="btn btn-sm">Show route</button></div>
+      {% if preview is not none %}
+        <p class="small muted">For {{ preview_emp.name }} ({{ preview_emp.department or 'no department' }}), assuming every condition is true:</p>
+        {% for step in preview %}
+          <div class="row" style="padding:3px 0"><span class="badge {{ 'b-cancelled' if step.error else ('' if step.note else 'b-pending') }}">{{ loop.index }}. {{ step.label }}</span>
+            {% if step.error %}<span style="color:var(--bad)">{{ step.error }}</span>{% elif step.note %}<span class="muted">{{ step.note }}</span>
+            {% else %}{{ step.approvers|map(attribute='name')|join(' / ') }}{% endif %}</div>
+        {% else %}<p class="muted">No approval needed.</p>{% endfor %}
+      {% endif %}
+    </form>
+  </div>
+  <aside class="card org-palette">
+    <h3>Employees <span class="muted small">({{ people|length }})</span></h3>
+    <p class="help">Drag a person onto a box.</p>
+    <input type="search" id="empFilter" placeholder="Filter by name, department…" aria-label="Filter employees">
+    <div class="palette-list">
+      {% for p in people %}<div class="emp-card" draggable="true" data-drag-emp="{{ p.employee_id }}"><b>{{ p.name }}</b>
+        <div class="small muted">{{ p.employee_id }} · {{ p.designation or '' }}{% if p.department %} · {{ p.department }}{% endif %}</div></div>{% endfor %}
+    </div>
+  </aside>
+</div>
+
+{% else %}
+<form method="post" class="card" style="max-width:760px">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  {% for key, spec in app.all_settings.items() %}
+    <div class="field">
+      <label>{{ spec.label }}</label>
+      {% if spec.type == 'bool' %}
+        <select name="{{ key }}" style="max-width:160px"><option value="1" {{ 'selected' if settings[key] }}>Yes</option><option value="0" {{ 'selected' if not settings[key] }}>No</option></select>
+      {% elif spec.type == 'choice' %}
+        <select name="{{ key }}">{% for c in spec.choices %}<option {{ 'selected' if settings[key] == c }}>{{ c }}</option>{% endfor %}</select>
+      {% else %}
+        <input type="{{ 'number' if spec.type == 'int' else 'text' }}" name="{{ key }}" value="{{ settings[key] }}" style="max-width:260px">
+      {% endif %}
+      {% if spec.help %}<div class="help">{{ spec.help }}</div>{% endif %}
+    </div>
+  {% endfor %}
+  <button class="btn btn-primary">Save settings</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Requests & Tasks{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="crumbs"><a href="{{ url_for('main.home') }}">Home</a></div><h1>Requests &amp; Tasks</h1></div></div>
+<nav class="tabs">
+  <a href="?tab=pending" class="{{ 'on' if tab == 'pending' }}">Pending my approval{% if pending %}<span class="n">{{ pending|length }}</span>{% endif %}</a>
+  <a href="?tab=mine" class="{{ 'on' if tab == 'mine' }}">My requests{% if open_count %} <span class="muted small">({{ open_count }} open)</span>{% endif %}</a>
+  <a href="?tab=updates" class="{{ 'on' if tab == 'updates' }}">Updates{% if updates_count %}<span class="n">{{ updates_count }}</span>{% endif %}</a>
+</nav>
+
+{% if tab == 'pending' %}
+  {% if pending %}
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Application</th><th>Request</th><th>Level</th><th>Waiting since</th><th></th></tr></thead>
+    <tbody>{% for task, app, rec in pending %}
+      <tr><td>{{ app.name }}</td><td>{{ rec.approval_title }}</td>
+        <td><span class="badge b-pending">{{ task.label }}</span></td>
+        <td class="nowrap">{{ task.activated_at.strftime('%d %b %Y %H:%M') if task.activated_at else '' }}</td>
+        <td class="right"><a class="btn btn-sm btn-primary" href="{{ url_for(rec.approval_endpoint, **rec.approval_args) }}">Review</a></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="card empty">Nothing is waiting for your approval.</div>{% endif %}
+
+{% elif tab == 'mine' %}
+  <div class="row" style="margin-bottom:12px">
+    {% for key, label in [('open', 'Open'), ('closed', 'Closed'), ('all', 'All')] %}
+      <a class="btn btn-sm {{ 'btn-primary' if status == key }}" href="?tab=mine&status={{ key }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  <div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>Application</th><th>Request</th><th>Status</th><th>Last update</th><th></th></tr></thead>
+    <tbody>{% for app, rec in mine %}{% set fresh = (app.code, rec.id) in unread_refs %}
+      <tr>
+        <td>{{ app.name }}</td>
+        <td>{% if fresh %}<span class="dot-new" title="New update"></span>{% endif %}{{ rec.approval_title }}</td>
+        <td><span class="badge b-{{ rec.status }}">{{ rec.status_label }}</span></td>
+        <td class="nowrap small">{{ rec.updated_at.strftime('%d %b %Y %H:%M') }}</td>
+        <td class="right"><a class="btn btn-sm" href="{{ url_for(rec.approval_endpoint, **rec.approval_args) }}">Open</a></td>
+      </tr>
+    {% else %}<tr><td colspan="5" class="empty">No requests here.</td></tr>{% endfor %}</tbody>
+  </table></div>
+
+{% else %}
+  <div class="row" style="margin-bottom:12px"><span class="spacer"></span>
+    {% if updates_count %}<form method="post" action="{{ url_for('main.read_all') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="btn btn-sm">Mark all read</button></form>{% endif %}</div>
+  <div class="card" style="padding:0">
+  {% for note in notes %}
+    <a href="{{ url_for('main.open_notification', note_id=note.id) }}" class="note {{ 'unread' if not note.read_at }}">
+      {% if note.kind == 'action' and not note.read_at %}<span class="badge b-pending">Action</span> {% endif %}<b>{{ note.title }}</b>
+      {% if note.body %}<div class="small" style="white-space:pre-line">{{ note.body|truncate(220) }}</div>{% endif %}
+      <div class="small muted">{{ APPS[note.app_code].name if note.app_code in APPS else note.app_code }} · {{ note.created_at.strftime('%d %b %Y %H:%M') }}</div>
+    </a>
+  {% else %}<div class="empty">No notifications yet.</div>{% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

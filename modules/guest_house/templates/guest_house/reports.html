@@ -1,0 +1,35 @@
+{% extends "guest_house/_layout.html" %}
+{% from "guest_house/_macros.html" import dt %}
+{% block title %}Guest house reports{% endblock %}
+{% block heading %}Reports{% endblock %}
+{% block page %}
+<form class="card row" method="get" style="margin-bottom:16px;align-items:flex-end">
+  <div><label for="from">Stays from</label><input type="date" id="from" name="from" value="{{ d_from }}"></div>
+  <div><label for="to">to</label><input type="date" id="to" name="to" value="{{ d_to }}"></div>
+  <div><label for="status">Status</label><select id="status" name="status"><option value="">Any</option>{% for k, v in statuses.items() %}<option value="{{ k }}" {{ 'selected' if request.args.status == k }}>{{ v }}</option>{% endfor %}</select></div>
+  <div><label for="department">Department</label><select id="department" name="department"><option value="">Any</option>{% for d in departments %}<option {{ 'selected' if request.args.department == d }}>{{ d }}</option>{% endfor %}</select></div>
+  <div><label for="stay">Stay</label><select id="stay" name="stay"><option value="">Any</option>{% for k, v in stay_types.items() %}<option value="{{ k }}" {{ 'selected' if request.args.stay == k }}>{{ v }}</option>{% endfor %}</select></div>
+  <button class="btn btn-primary">Run</button>
+  <span class="spacer"></span>
+  {% set args = request.args.to_dict() %}{% set _ = args.update(format='csv', **{'from': d_from|string, 'to': d_to|string}) %}
+  <a class="btn" href="?{{ args|urlencode }}">Download CSV</a>
+</form>
+<div class="grid g6" style="margin-bottom:16px">
+  <div class="stat"><div class="k">Requests</div><div class="v">{{ summary.requests }}</div></div>
+  <div class="stat"><div class="k">Guests</div><div class="v">{{ summary.guests }}</div></div>
+  <div class="stat"><div class="k">Guest house nights</div><div class="v">{{ summary.room_nights }}</div></div>
+  <div class="stat"><div class="k">Hotel nights</div><div class="v">{{ summary.hotel_nights }}</div></div>
+  <div class="stat"><div class="k">Hotel cost</div><div class="v">₹{{ '{:,.0f}'.format(summary.hotel_cost) }}</div></div>
+</div>
+<div class="tbl-wrap"><table class="tbl">
+  <thead><tr><th>Request</th><th>Status</th><th>Applicant / dept</th><th>Guest</th><th>Arrival</th><th>Departure</th><th>Nights</th><th>Stay</th><th>Expenses</th></tr></thead>
+  <tbody>{% for x in rows %}
+    <tr><td><a href="{{ url_for('guest_house.request_view', req_id=x.request_id) }}">{{ x.request.req_no }}</a></td>
+      <td><span class="badge b-{{ x.request.status }}">{{ x.request.status_label }}</span></td>
+      <td>{{ x.request.applicant.name }}<div class="small muted">{{ x.request.department or '' }}</div></td>
+      <td>{{ x.name }}<div class="small muted">{{ x.organisation or '' }}</div></td>
+      <td class="nowrap">{{ dt(x.arrival) }}</td><td class="nowrap">{{ dt(x.departure) }}</td><td>{{ x.nights }}</td>
+      <td>{{ x.stay_label }}</td><td class="small">{{ x.request.expenses_by }}</td></tr>
+  {% else %}<tr><td colspan="9" class="empty">No stays in this period.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}
