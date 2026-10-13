@@ -72,6 +72,8 @@ def employee_edit(emp_id=None):
                 return redirect(request.url)
             emp = Employee(employee_id=new_id, source="manual")
             db.session.add(emp)
+        else:
+            emp.source = "manual"  # manual edits are preserved across future syncs
         for field in ("name", "designation", "department", "phone", "gender", "category", "status"):
             setattr(emp, field, f.get(field, "").strip() or None)
         emp.name = emp.name or emp.employee_id
@@ -121,11 +123,42 @@ def impersonate(emp_id):
     return redirect(url_for("main.home"))
 
 
+def _get_odbc():
+    odbc = (current_app.config.get("SOURCE_ODBC") or "").strip("\"' ")
+    if not odbc or ("SERVER=" not in odbc.upper() and "DSN=" not in odbc.upper()):
+        from dotenv import dotenv_values
+        from pathlib import Path
+        env = dotenv_values(Path(current_app.root_path).parent / ".env")
+        odbc = (env.get("SOURCE_ODBC") or "").strip("\"' ")
+        if not odbc or ("SERVER=" not in odbc.upper() and "DSN=" not in odbc.upper()):
+            if env.get("SOURCE_DB_SERVER"):
+                server = env.get("SOURCE_DB_SERVER")
+                port = env.get("SOURCE_DB_PORT", "1433")
+                driver = env.get("SOURCE_DB_DRIVER", "SQL Server")
+                db_name = env.get("SOURCE_DB_NAME", "")
+                user = env.get("SOURCE_DB_USER", "")
+                pwd = env.get("SOURCE_DB_PASSWORD", "")
+                server_str = f"{server},{port}" if port else server
+                parts = [f"DRIVER={{{driver}}}", f"SERVER={server_str}", f"DATABASE={db_name}"]
+                if str(env.get("SOURCE_DB_TRUSTED_CONNECTION", "")).lower() in ("1", "true", "yes"):
+                    parts.append("Trusted_Connection=yes")
+                else:
+                    if user:
+                        parts.append(f"UID={user}")
+                    if pwd:
+                        parts.append(f"PWD={pwd}")
+                odbc = ";".join(parts)
+        if odbc and ("SERVER=" in odbc.upper() or "DSN=" in odbc.upper()):
+            current_app.config["SOURCE_ODBC"] = odbc
+    return odbc or ""
+
+
 # ---------------------------------------------------------------- sync
 @bp.route("/sync", methods=["GET", "POST"])
 @superadmin_required
 def sync_page():
     result = None
+    odbc = _get_odbc()
     if request.method == "POST":
         deactivate = bool(request.form.get("deactivate_missing"))
         try:
@@ -136,7 +169,6 @@ def sync_page():
                 header, rows = sync.read_file(upload.filename, upload.stream)
                 records = sync.normalize(header, rows, "upload")
             else:
-                odbc = current_app.config["SOURCE_ODBC"]
                 if not odbc:
                     raise ValueError("SOURCE_ODBC is not configured in .env.")
                 records = []
@@ -148,13 +180,22 @@ def sync_page():
                 records.sort(key=lambda r: sync.SOURCE_PRIORITY.get(r["source"], 9), reverse=True)
             result = sync.upsert(records, deactivate_missing=deactivate)
             db.session.commit()
-            flash(f"Imported {result['received']} rows.", "success")
+            total_kept = result.get("kept_manual", 0) + result.get("kept_staff", 0)
+            msg = (
+                f"Sync completed! Processed {result['received']} rows: "
+                f"{result['inserted']} added, {result['updated']} updated, "
+                f"{total_kept} preserved"
+            )
+            if result.get("deactivated"):
+                msg += f", {result['deactivated']} marked inactive"
+            msg += "."
+            flash(msg, "success")
         except Exception as exc:  # report any source/file problem to the admin
             db.session.rollback()
             current_app.logger.exception("Employee sync failed")
             flash(f"Sync failed: {exc}", "error")
     return render_template("admin/sync.html", result=result, views=current_app.config["SOURCE_VIEWS"],
-                           columns=sync.COLUMNS, odbc_ready=bool(current_app.config["SOURCE_ODBC"]))
+                           columns=sync.COLUMNS, odbc_ready=bool(odbc))
 
 
 # ---------------------------------------------------------------- app configuration

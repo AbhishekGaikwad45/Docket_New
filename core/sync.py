@@ -30,7 +30,7 @@ COLUMNS = {
                    "REPORTING MANAGER", "REPORTING TO", "REPORTING OFFICER"),
 }
 DEPARTMENT_RENAMES = {"IT": "Information Technology"}
-SOURCE_PRIORITY = {"staff": 0, "associates": 1, "upload": 2, "manual": 3}
+SOURCE_PRIORITY = {"manual": -1, "staff": 0, "associates": 1, "upload": 2}
 
 
 def _key(name):
@@ -88,8 +88,15 @@ def normalize(header, rows, source):
 def upsert(records, deactivate_missing=False):
     """Insert/update employees. Returns a stats dict. Caller commits."""
     now = datetime.now()
-    stats = {"received": len(records), "inserted": 0, "updated": 0, "kept_staff": 0,
-             "managers_linked": 0, "deactivated": 0}
+    stats = {
+        "received": len(records),
+        "inserted": 0,
+        "updated": 0,
+        "kept_staff": 0,
+        "kept_manual": 0,
+        "managers_linked": 0,
+        "deactivated": 0,
+    }
     existing = {e.employee_id: e for e in Employee.query.all()}
 
     for rec in records:
@@ -99,21 +106,38 @@ def upsert(records, deactivate_missing=False):
             db.session.add(emp)
             existing[emp.employee_id] = emp
             stats["inserted"] += 1
+        elif emp.is_superadmin or emp.source == "manual" or emp.employee_id == "admin":
+            stats["kept_manual"] += 1
+            continue  # Admin or manually edited in portal stays as is!
         elif SOURCE_PRIORITY.get(emp.source, 9) < SOURCE_PRIORITY.get(rec["source"], 9):
             stats["kept_staff"] += 1  # e.g. associates feed must not overwrite a staff record
             continue
         else:
             stats["updated"] += 1
-        for field in ("name", "designation", "department", "status", "phone", "gender", "category", "source"):
-            setattr(emp, field, rec[field])
+
+        for field in ("name", "status", "phone", "gender", "category", "source"):
+            val = rec[field]
+            if val is not None and str(val).strip() != "":
+                setattr(emp, field, val)
+        if rec["designation"]:
+            emp.designation = rec["designation"]
+        if rec["department"]:
+            emp.department = rec["department"]
         emp.email = rec["email"] or emp.email
         emp.last_synced_at = now
 
     # Second pass: managers may appear later in the feed than their reports.
     for rec in records:
         emp = existing[rec["employee_id"]]
-        if rec["manager_id"] and not emp.manager_locked and rec["manager_id"] in existing \
-                and rec["manager_id"] != emp.employee_id and emp.source == rec["source"]:
+        if (
+            rec["manager_id"]
+            and not emp.manager_locked
+            and not emp.is_superadmin
+            and emp.source != "manual"
+            and rec["manager_id"] in existing
+            and rec["manager_id"] != emp.employee_id
+            and emp.source == rec["source"]
+        ):
             emp.reporting_manager_id = rec["manager_id"]
             stats["managers_linked"] += 1
 

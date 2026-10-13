@@ -5,4 +5,5 @@ alembic>=1.13
 python-dotenv>=1.0
 openpyxl>=3.1
 pytest>=8
+waitress>=3.0
 # pyodbc  # only for live sync from the Mantra SQL Server
