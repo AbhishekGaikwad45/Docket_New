@@ -34,9 +34,26 @@ class Config:
     SMTP_USE_TLS = _flag("SMTP_USE_TLS")
     SMTP_SENDER = os.getenv("SMTP_SENDER", "docket@localhost")
 
-    # Employee master source (Mantra SQL Server). Full pyodbc connection string, e.g.
-    # DRIVER={SQL Server};SERVER=172.21.30.101,1433;DATABASE=JSW_Dharamtar;UID=...;PWD=...
-    SOURCE_ODBC = os.getenv("SOURCE_ODBC", "")
+    # Employee master source (Mantra SQL Server). Full pyodbc connection string or SOURCE_DB_* components.
+    SOURCE_ODBC = os.getenv("SOURCE_ODBC", "").strip("\"' ")
+    if not SOURCE_ODBC or ("SERVER=" not in SOURCE_ODBC.upper() and "DSN=" not in SOURCE_ODBC.upper()):
+        if os.getenv("SOURCE_DB_SERVER"):
+            _driver = os.getenv("SOURCE_DB_DRIVER", "SQL Server")
+            _server = os.getenv("SOURCE_DB_SERVER")
+            _port = os.getenv("SOURCE_DB_PORT", "1433")
+            _dbname = os.getenv("SOURCE_DB_NAME", "")
+            _user = os.getenv("SOURCE_DB_USER", "")
+            _pwd = os.getenv("SOURCE_DB_PASSWORD", "")
+            _server_str = f"{_server},{_port}" if _port else _server
+            _parts = [f"DRIVER={{{_driver}}}", f"SERVER={_server_str}", f"DATABASE={_dbname}"]
+            if _flag("SOURCE_DB_TRUSTED_CONNECTION"):
+                _parts.append("Trusted_Connection=yes")
+            else:
+                if _user:
+                    _parts.append(f"UID={_user}")
+                if _pwd:
+                    _parts.append(f"PWD={_pwd}")
+            SOURCE_ODBC = ";".join(_parts)
     # view name -> source label stored on the employee. Staff wins over associates on conflicts.
     SOURCE_VIEWS = {
         "view_EmployeeMaster_Report_Staff": "staff",

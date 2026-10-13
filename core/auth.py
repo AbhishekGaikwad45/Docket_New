@@ -5,7 +5,7 @@ import secrets
 import time
 from datetime import datetime
 
-from flask import Blueprint, current_app, flash, g, redirect, render_template, request, session, url_for
+from flask import Blueprint, current_app, flash, g, jsonify, redirect, render_template, request, session, url_for
 
 from core.db import db
 from core.mail import send_mail
@@ -21,13 +21,16 @@ def _otp_mac(emp_id, code, expires):
     return hmac.new(current_app.config["SECRET_KEY"].encode(), msg, hashlib.sha256).hexdigest()
 
 
-def _sign_in(emp):
+def _sign_in(emp, is_ajax=False):
     nxt = session.get("next")
     session.clear()
     session["emp_id"] = emp.employee_id
     emp.last_login_at = datetime.now()
     db.session.commit()
-    return redirect(nxt if nxt and nxt.startswith("/") and not nxt.startswith("//") else url_for("main.home"))
+    dest = nxt if nxt and nxt.startswith("/") and not nxt.startswith("//") else url_for("main.home")
+    if is_ajax:
+        return jsonify({"ok": True, "redirect": dest})
+    return redirect(dest)
 
 
 @bp.get("/login")
@@ -69,26 +72,35 @@ def send_otp():
 @bp.route("/login/verify", methods=["GET", "POST"])
 def verify_otp():
     emp_id = session.get("otp_emp")
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest" or "application/json" in request.headers.get("Accept", "")
     if not emp_id:
+        if is_ajax:
+            return jsonify({"ok": False, "error": "Session expired. Please request a new code.", "redirect": url_for("auth.login")}), 400
         return redirect(url_for("auth.login"))
     if request.method == "GET":
         return render_template("login.html", otp_for=emp_id)
 
     session["otp_tries"] = session.get("otp_tries", 0) + 1
-    code = request.form.get("otp", "").strip()
+    code = (request.json.get("otp") if request.is_json else request.form.get("otp", "")).strip()
     expired = time.time() > session.get("otp_exp", 0)
     if expired or session["otp_tries"] > MAX_OTP_ATTEMPTS:
         for k in ("otp_emp", "otp_exp", "otp_mac", "otp_tries"):
             session.pop(k, None)
+        if is_ajax:
+            return jsonify({"ok": False, "error": "Code expired or too many attempts. Request a new one.", "redirect": url_for("auth.login")}), 400
         flash("Code expired or too many attempts. Request a new one.", "error")
         return redirect(url_for("auth.login"))
     if not hmac.compare_digest(_otp_mac(emp_id, code, session["otp_exp"]), session.get("otp_mac", "")):
+        if is_ajax:
+            return jsonify({"ok": False, "error": "Incorrect code. Please try again."}), 400
         flash("Incorrect code.", "error")
         return redirect(url_for("auth.verify_otp"))
     emp = db.session.get(Employee, emp_id)
     if emp is None or not emp.is_active:
+        if is_ajax:
+            return jsonify({"ok": False, "error": "Account not found or inactive.", "redirect": url_for("auth.login")}), 400
         return redirect(url_for("auth.login"))
-    return _sign_in(emp)
+    return _sign_in(emp, is_ajax=is_ajax)
 
 
 @bp.post("/login/password")

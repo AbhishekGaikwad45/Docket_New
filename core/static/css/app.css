@@ -224,7 +224,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue-2);
 
 /* ---------- login ---------- */
 .login{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#0f56b8,#1e88e5 55%,#29a6dc)}
-.login-card{width:min(420px,92vw);background:#fff;border-radius:16px;padding:32px;box-shadow:0 30px 60px rgba(0,20,60,.3)}
+.login-card{width:min(420px,92vw);background:#fff;border-radius:16px;padding:32px;box-shadow:0 30px 60px rgba(0,20,60,.3);position:relative;overflow:hidden;transition:all .3s cubic-bezier(.4,0,.2,1)}
 .login-card .brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
 
 .login-tabs{display:flex;margin-bottom:18px;border-bottom:1px solid var(--border)}

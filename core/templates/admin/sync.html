@@ -3,14 +3,16 @@
 {% block content %}
 {% set heading, active = "Employee sync / import", "sync" %}{% include "admin/_nav.html" %}
 <div class="grid g2">
-  <form method="post" class="card">
+  <form method="post" class="card" autocomplete="off">
     <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="mode" value="source">
     <h2>Sync from Mantra (SQL Server)</h2>
-    {% if not odbc_ready %}<p class="flash flash-info">Set <code>SOURCE_ODBC</code> in <code>.env</code> and install <code>pyodbc</code> to enable.</p>{% endif %}
+    {% if not odbc_ready %}<p class="flash flash-info">Set <code>SOURCE_ODBC</code> in <code>.env</code> and install
+      <code>pyodbc</code> to enable.</p>{% endif %}
     {% for view, label in views.items() %}
-      <label><input type="checkbox" name="views" value="{{ view }}" checked> {{ label|title }} <span class="muted small">dbo.{{ view }}</span></label>
+    <label><input type="checkbox" name="views" value="{{ view }}" checked> {{ label|title }} <span
+        class="muted small">dbo.{{ view }}</span></label>
     {% endfor %}
-    <label><input type="checkbox" name="active_only" value="1"> Active employees only</label>
+    <label><input type="checkbox" name="active_only" value="1" checked> Active employees only</label>
     <label><input type="checkbox" name="deactivate_missing" value="1"> Mark employees missing from the feed as Inactive</label>
     <button class="btn btn-primary" {{ 'disabled' if not odbc_ready }} style="margin-top:10px">Run sync</button>
     <p class="help">Schedule nightly with <code>flask sync-employees</code>.</p>
@@ -19,16 +21,52 @@
     <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="mode" value="file">
     <h2>Import a file (.xlsx / .csv)</h2>
     <div class="field"><input type="file" name="file" accept=".xlsx,.xlsm,.csv" required></div>
-    <label><input type="checkbox" name="deactivate_missing" value="1"> Mark previously uploaded employees missing from this file as Inactive</label>
+    <label><input type="checkbox" name="deactivate_missing" value="1"> Mark previously uploaded employees missing from
+      this file as Inactive</label>
     <button class="btn btn-primary" style="margin-top:10px">Import</button>
     <p class="help">First row = headers. Recognised columns:</p>
-    <table class="tbl compact small"><tbody>{% for field, names in columns.items() %}<tr><td><b>{{ field }}</b></td><td>{{ names|join(', ') }}</td></tr>{% endfor %}</tbody></table>
+    <table class="tbl compact small">
+      <tbody>{% for field, names in columns.items() %}<tr>
+          <td><b>{{ field }}</b></td>
+          <td>{{ names|join(', ') }}</td>
+        </tr>{% endfor %}</tbody>
+    </table>
   </form>
 </div>
 {% if result %}
-<div class="card" style="margin-top:16px"><h2>Result</h2>
-  <div class="grid g6">{% for k, v in result.items() %}<div class="stat"><div class="k">{{ k.replace('_', ' ') }}</div><div class="v">{{ v }}</div></div>{% endfor %}</div>
-  {% if result.kept_staff %}<p class="help">"kept staff": rows skipped because a staff record with the same ID already exists (staff wins over associates/uploads).</p>{% endif %}
+<div class="card" style="margin-top:16px">
+  <h2>Sync Results</h2>
+  <div class="grid g6">
+    <div class="stat">
+      <div class="k">Total Processed</div>
+      <div class="v">{{ result.received }}</div>
+    </div>
+    <div class="stat">
+      <div class="k">Newly Added</div>
+      <div class="v" style="color:var(--c-success, #16a34a)">{{ result.inserted }}</div>
+    </div>
+    <div class="stat">
+      <div class="k">Updated</div>
+      <div class="v" style="color:var(--c-primary, #2563eb)">{{ result.updated }}</div>
+    </div>
+    <div class="stat">
+      <div class="k">Manual / Preserved</div>
+      <div class="v">{{ (result.kept_manual or 0) + (result.kept_staff or 0) }}</div>
+    </div>
+    <div class="stat">
+      <div class="k">Managers Linked</div>
+      <div class="v">{{ result.managers_linked }}</div>
+    </div>
+    <div class="stat">
+      <div class="k">Deactivated</div>
+      <div class="v">{{ result.deactivated }}</div>
+    </div>
+  </div>
+  <p class="help" style="margin-top:12px">
+    <b>Preserved:</b> Employees edited by hand in the portal and Super Admin accounts stay as they are and are protected
+    from sync overwrites.
+    {% if result.kept_staff %}Staff feed records also win over Associates.{% endif %}
+  </p>
 </div>
 {% endif %}
 {% endblock %}
