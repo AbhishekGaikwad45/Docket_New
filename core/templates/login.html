@@ -99,9 +99,9 @@
           Welcome back, <b style="color:#1e293b">{{ otp_for }}</b>
         </p>
 
-        <!-- 3-Second Progress Bar -->
+        <!-- 1.5-Second Progress Bar -->
         <div style="width:140px;height:3.5px;border-radius:99px;background:#f1f5f9;overflow:hidden;margin-top:22px">
-          <div style="height:100%;background:#10b981;border-radius:99px;animation:hs-bar 3s linear forwards"></div>
+          <div style="height:100%;background:#10b981;border-radius:99px;animation:hs-bar 1s linear forwards"></div>
         </div>
         <div style="margin-top:8px;font:400 11.5px Roboto,sans-serif;color:#94a3b8">Redirecting to dashboard…</div>
       </div>
@@ -126,7 +126,7 @@
               animOverlay.style.opacity = "1";
               setTimeout(function() {
                 window.location.href = destUrl || "{{ url_for('main.home') }}";
-              }, 3000);
+              }, 1000);
             }, 200);
           }
 

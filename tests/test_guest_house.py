@@ -9,7 +9,7 @@ from core import approvals, sync
 from core.db import db
 from core.demo import seed
 from core.models import ApprovalNode, Employee, Notification
-from modules.guest_house.models import GuestRequest, Room, Vehicle
+from modules.guest_house.models import ExpenseBorneBy, GuestRequest, Room, Vehicle, VisitPurpose
 
 
 @pytest.fixture()
@@ -235,3 +235,96 @@ def test_sync_rules(app):
     assert db.session.get(Employee, "1007").name == "Vikas More"  # staff record not overwritten
     stats = sync.upsert([{**recs[0], "email": None}])
     assert db.session.get(Employee, "2001").email == "asha@x.com"  # blank email never wipes a saved one
+
+
+def test_visit_purpose_master(app):
+    admin = as_user(app.test_client(), "admin")
+    url = "/apps/guest_house/masters/visit-purposes"
+    res = admin.get(url)
+    assert res.status_code == 200
+    assert "Visit purposes" in res.get_data(as_text=True)
+
+    # Add new purpose
+    admin.post(url, data={"name": "Client Presentation", "description": "Client visit"})
+    p = VisitPurpose.query.filter_by(name="Client Presentation").first()
+    assert p is not None
+    assert p.is_active is True
+
+    # Toggle active
+    admin.post(url, data={"action": "toggle", "id": p.id})
+    db.session.refresh(p)
+    assert p.is_active is False
+
+    # Delete purpose
+    admin.post(url, data={"action": "delete", "id": p.id})
+    assert VisitPurpose.query.filter_by(name="Client Presentation").first() is None
+
+    # Test vehicle master delete
+    veh_url = "/apps/guest_house/masters/vehicles"
+    admin.post(veh_url, data={"reg_no": "MH08TEST99", "vehicle_type": "Sedan", "seats": "4", "ownership": "Company"})
+    v = Vehicle.query.filter_by(reg_no="MH08TEST99").first()
+    assert v is not None
+    admin.post(veh_url, data={"action": "delete", "id": v.id})
+    assert Vehicle.query.filter_by(reg_no="MH08TEST99").first() is None
+
+    # Test expense-borne-by master
+    exp_url = "/apps/guest_house/masters/expense-borne-by"
+    res = admin.get(exp_url)
+    assert res.status_code == 200
+    assert "Expenses borne by" in res.get_data(as_text=True)
+
+    admin.post(exp_url, data={"name": "Joint Venture"})
+    eb = ExpenseBorneBy.query.filter_by(name="Joint Venture").first()
+    assert eb is not None
+    assert eb.is_active is True
+
+    admin.post(exp_url, data={"action": "toggle", "id": eb.id})
+    db.session.refresh(eb)
+    assert eb.is_active is False
+
+    admin.post(exp_url, data={"action": "delete", "id": eb.id})
+    assert ExpenseBorneBy.query.filter_by(name="Joint Venture").first() is None
+
+    # Test desk updating expenses_by on a request
+    req = GuestRequest.query.first()
+    if req:
+        admin.post(f"/apps/guest_house/requests/{req.id}/update-expenses", data={"expenses_by": "Guest / Visitor", "cost_centre": ""})
+        db.session.refresh(req)
+        assert req.expenses_by == "Guest / Visitor"
+
+
+def test_backdated_dates_validation(app):
+    c = as_user(app.test_client(), "1007")
+    # 1. Backdated arrival
+    res = submit(c, guests=1, start=-2, end=3)
+    assert "arrival is too soon or in the past" in res.get_data(as_text=True)
+
+    # 2. Backdated departure
+    res = submit(c, guests=1, start=-5, end=-2)
+    assert "departure is in the past" in res.get_data(as_text=True)
+
+    # 3. Departure before arrival
+    res = submit(c, guests=1, start=5, end=2)
+    assert "departure must be after arrival" in res.get_data(as_text=True)
+
+
+def test_travel_ticket_mode_validation(app):
+    c = as_user(app.test_client(), "1007")
+    # 1. Travel ticket required but missing travel mode
+    res = submit(c, guests=1, start=3, end=5, need_ticket="1", ticket_note="")
+    assert "Select the travel mode (Air / Rail / Flight)" in res.get_data(as_text=True)
+
+    # 2. Travel ticket required with travel_mode = Air
+    res = submit(c, guests=1, start=3, end=5, need_ticket="1", travel_mode="Air", ticket_note="Mumbai to Delhi\n<!--TRAVEL_MODE:Air-->")
+    assert res.status_code == 302
+    req = latest()
+    assert req.need_ticket is True
+    assert req.travel_mode == "Air"
+    assert "Mumbai to Delhi" in req.ticket_note
+
+
+
+
+
+
+

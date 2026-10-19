@@ -3,20 +3,27 @@
 {% block title %}{{ req.req_no }}{% endblock %}
 {% block heading %}{{ req.req_no }} {{ status(req) }}{% endblock %}
 {% block actions %}
-  <a class="btn" href="{{ url_for('guest_house.print_request', req_id=req.id) }}" target="_blank">Print form</a>
-  {% if req.applicant_id == current_user.employee_id %}<a class="btn" href="{{ url_for('guest_house.new_request', copy=req.id) }}">Raise again</a>{% endif %}
-  {% if req.status == 'returned' and req.applicant_id == current_user.employee_id %}<a class="btn btn-primary" href="{{ url_for('guest_house.edit_request', req_id=req.id) }}">Edit &amp; resubmit</a>{% endif %}
-  {% if is_desk and req.status in ('approved', 'arranged') %}<a class="btn btn-primary" href="{{ url_for('guest_house.arrange', req_id=req.id) }}">{{ 'Update arrangement' if req.status == 'arranged' else 'Arrange' }}</a>{% endif %}
+<a class="btn" href="{{ url_for('guest_house.print_request', req_id=req.id) }}" target="_blank">Print form</a>
+{% if req.applicant_id == current_user.employee_id %}<a class="btn"
+  href="{{ url_for('guest_house.new_request', copy=req.id) }}">Raise again</a>{% endif %}
+{% if req.status == 'returned' and req.applicant_id == current_user.employee_id %}<a class="btn btn-primary"
+  href="{{ url_for('guest_house.edit_request', req_id=req.id) }}">Edit &amp; resubmit</a>{% endif %}
+{% if is_desk and req.status in ('approved', 'arranged') %}<a class="btn btn-primary"
+  href="{{ url_for('guest_house.arrange', req_id=req.id) }}">{{ 'Update arrangement' if req.status == 'arranged' else
+  'Arrange' }}</a>{% endif %}
 {% endblock %}
 {% block page %}
 <div class="grid g3">
   <div class="span2 stack">
     {% if can_decide %}
-    <form method="post" action="{{ url_for('guest_house.decide', req_id=req.id) }}" class="card" style="border-left:4px solid #f59e0b">
+    <form method="post" action="{{ url_for('guest_house.decide', req_id=req.id) }}" class="card"
+      style="border-left:4px solid #f59e0b">
       <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
       <h2>Your decision - {{ task.label }}</h2>
-      {% if current_user.employee_id not in task.candidate_ids %}<p class="flash flash-info">You are acting on behalf of {{ task.candidate_people|map(attribute='name')|join(' / ') }} as application admin.</p>{% endif %}
-      <div class="field"><label for="remarks">Remarks <span class="muted">(required to reject or send back)</span></label><textarea id="remarks" name="remarks" rows="2"></textarea></div>
+      {% if current_user.employee_id not in task.candidate_ids %}<p class="flash flash-info">You are acting on behalf of
+        {{ task.candidate_people|map(attribute='name')|join(' / ') }} as application admin.</p>{% endif %}
+      <div class="field"><label for="remarks">Remarks <span class="muted">(required to reject or send
+            back)</span></label><textarea id="remarks" name="remarks" rows="2"></textarea></div>
       <div class="row">
         <button class="btn btn-ok" name="action" value="approve">Approve</button>
         <button class="btn" name="action" value="return">Send back for changes</button>
@@ -28,74 +35,200 @@
     <section class="card">
       <h2>Visit</h2>
       <dl class="kv">
-        <dt>Raised by</dt><dd>{{ req.applicant.name }} <span class="muted">· {{ req.applicant.designation or '' }} · {{ req.department or '' }}</span></dd>
-        <dt>Submitted</dt><dd>{{ dt(req.submitted_at) }}</dd>
-        <dt>Visit type</dt><dd>{{ req.visit_type }}</dd>
-        <dt>Organisation</dt><dd>{{ req.organisation or '-' }}</dd>
-        <dt>Purpose</dt><dd>{{ req.purpose }}</dd>
-        <dt>Expenses borne by</dt><dd>{{ req.expenses_by }}{% if req.cost_centre %} · cost centre {{ req.cost_centre }}{% endif %}</dd>
-        {% if req.other_note %}<dt>Anything else</dt><dd>{{ req.other_note }}</dd>{% endif %}
-        {% if req.status == 'cancelled' %}<dt>Cancelled</dt><dd>{{ dt(req.cancelled_at) }} - {{ req.cancel_reason }}</dd>{% endif %}
+        <dt>Raised by</dt>
+        <dd>{{ req.applicant.name }} <span class="muted">· {{ req.applicant.designation or '' }} · {{ req.department or
+            '' }}</span></dd>
+        <dt>Submitted</dt>
+        <dd>{{ dt(req.submitted_at) }}</dd>
+        <dt>Purpose type</dt>
+        <dd>{{ req.visit_type }}</dd>
+        <dt>Organisation</dt>
+        <dd>{{ req.organisation or '-' }}</dd>
+        <dt>Remarks</dt>
+        <dd>{{ req.purpose }}</dd>
+        <dt>Expenses borne by</dt>
+        <dd>
+          {% if is_desk and req.status not in ('cancelled', 'completed') %}
+          <form method="post" action="{{ url_for('guest_house.update_expenses', req_id=req.id) }}" class="row"
+            style="gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <select name="expenses_by" data-switch="form"
+              style="max-width:220px;height:30px;padding:2px 8px;font-size:13px">
+              {% for v in expenses_by %}
+              <option value="{{ v }}" {{ 'selected' if req.expenses_by==v }}>{{ v }}</option>
+              {% endfor %}
+            </select>
+            <span data-when="Department (cost centre)">
+              <input type="text" name="cost_centre" value="{{ req.cost_centre or '' }}" placeholder="Cost centre"
+                style="width:130px;height:30px;padding:2px 8px;font-size:13px">
+            </span>
+            <button class="btn btn-sm btn-primary">Update</button>
+          </form>
+          {% else %}
+          {{ req.expenses_by }}{% if req.cost_centre %} · cost centre {{ req.cost_centre }}{% endif %}
+          {% endif %}
+        </dd>
+        {% if req.other_note %}<dt>Anything else</dt>
+        <dd>{{ req.other_note }}</dd>{% endif %}
+        {% if req.status == 'cancelled' %}<dt>Cancelled</dt>
+        <dd>{{ dt(req.cancelled_at) }} - {{ req.cancel_reason }}</dd>{% endif %}
       </dl>
     </section>
 
     <section class="card">
       <h2>Guests ({{ req.guests|length }})</h2>
-      <div class="tbl-wrap"><table class="tbl">
-        <thead><tr><th>#</th><th>Guest</th><th>Contact</th><th>Arrival</th><th>Departure</th><th>Stay</th>{% if is_desk and req.status == 'arranged' %}<th></th>{% endif %}</tr></thead>
-        <tbody>
-        {% for gst in req.guests %}
-          <tr>
-            <td>{{ loop.index }}</td>
-            <td><b>{{ gst.name }}</b>{% if gst.gender %} <span class="muted small">({{ gst.gender }})</span>{% endif %}<div class="small muted">{{ gst.designation or '' }}{% if gst.organisation %} · {{ gst.organisation }}{% endif %}</div></td>
-            <td class="small">{{ gst.mobile or '' }}<div>{{ gst.email or '' }}</div></td>
-            <td class="nowrap">{{ dt(gst.arrival) }}{% if gst.checked_in_at %}<div class="small" style="color:var(--ok)">in {{ dt(gst.checked_in_at, '%d %b %H:%M') }}</div>{% endif %}</td>
-            <td class="nowrap">{{ dt(gst.departure) }}{% if gst.checked_out_at %}<div class="small muted">out {{ dt(gst.checked_out_at, '%d %b %H:%M') }}</div>{% endif %}</td>
-            <td>{{ gst.stay_label }}{% if gst.stay_type == 'hotel' and gst.hotel_booking_ref %}<div class="small muted">Ref {{ gst.hotel_booking_ref }}</div>{% endif %}{% if gst.remarks %}<div class="small muted">{{ gst.remarks }}</div>{% endif %}</td>
-            {% if is_desk and req.status == 'arranged' %}
-            <td class="nowrap">
-              {% if gst.stay_type in ('guest_house', 'hotel') %}
-              <form method="post" action="{{ url_for('guest_house.guest_status', guest_id=gst.id, action='check-out' if gst.checked_in_at else 'check-in') }}">
-                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                {% if not gst.checked_in_at %}<button class="btn btn-sm">Check in</button>
-                {% elif not gst.checked_out_at %}<button class="btn btn-sm">Check out</button>{% endif %}
-              </form>
-              {% endif %}
-            </td>{% endif %}
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Guest</th>
+              <th>Contact</th>
+              <th>Arrival</th>
+              <th>Departure</th>
+              <th>Stay</th>{% if is_desk and req.status == 'arranged' %}<th></th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for gst in req.guests %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td><b>{{ gst.name }}</b>{% if gst.gender %} <span class="muted small">({{ gst.gender }})</span>{% endif
+                %}<div class="small muted">{{ gst.designation or '' }}{% if gst.organisation %} · {{ gst.organisation
+                  }}{% endif %}</div>
+              </td>
+              <td class="small">{{ gst.mobile or '' }}<div>{{ gst.email or '' }}</div>
+              </td>
+              <td class="nowrap">{{ dt(gst.arrival) }}{% if gst.checked_in_at %}<div class="small"
+                  style="color:var(--ok)">in {{ dt(gst.checked_in_at, '%d %b %H:%M') }}</div>{% endif %}</td>
+              <td class="nowrap">{{ dt(gst.departure) }}{% if gst.checked_out_at %}<div class="small muted">out {{
+                  dt(gst.checked_out_at, '%d %b %H:%M') }}</div>{% endif %}</td>
+              <td>{{ gst.stay_label }}{% if gst.stay_type == 'hotel' and gst.hotel_booking_ref %}<div
+                  class="small muted">Ref {{ gst.hotel_booking_ref }}</div>{% endif %}{% if gst.remarks %}<div
+                  class="small muted">{{ gst.remarks }}</div>{% endif %}</td>
+              {% if is_desk and req.status == 'arranged' %}
+              <td class="nowrap">
+                {% if gst.stay_type in ('guest_house', 'hotel') %}
+                <form method="post"
+                  action="{{ url_for('guest_house.guest_status', guest_id=gst.id, action='check-out' if gst.checked_in_at else 'check-in') }}">
+                  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                  {% if not gst.checked_in_at %}<button class="btn btn-sm">Check in</button>
+                  {% elif not gst.checked_out_at %}<button class="btn btn-sm">Check out</button>{% endif %}
+                </form>
+                {% endif %}
+              </td>{% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section class="card">
       <h2>Requested vs. arranged</h2>
-      <div class="tbl-wrap"><table class="tbl">
-        <thead><tr><th style="width:150px">Item</th><th style="width:70px">Asked</th><th>Requester's note</th><th>For Administration use</th></tr></thead>
-        <tbody>
-          <tr><td>Guest house</td><td>{{ yn(req.need_guest_house) }}</td><td></td>
-            <td rowspan="2">{{ req.accommodation_summary }}</td></tr>
-          <tr><td>Hotel</td><td>{{ yn(req.need_hotel) }}</td><td></td></tr>
-          <tr><td>Vehicle</td><td>{{ yn(req.need_vehicle) }}</td><td>{{ req.vehicle_note or '' }}</td>
-            <td>{% for t in req.trips %}<div>{{ t.trip_type }}: {{ t.vehicle_label }}{% if t.driver_name %} · {{ t.driver_name }} {{ t.driver_phone or '' }}{% endif %}</div>{% else %}{{ '-' }}{% endfor %}</td></tr>
-          <tr><td>Food</td><td>{{ yn(req.need_food) }}</td><td>{{ req.food_note or '' }}</td><td>{{ req.food_arrangement or '-' }}</td></tr>
-          <tr><td>Ticket</td><td>{{ yn(req.need_ticket) }}</td><td>{{ req.ticket_note or '' }}</td><td>{{ req.ticket_arrangement or '-' }}</td></tr>
-          {% if req.desk_remarks %}<tr><td>Desk remarks</td><td></td><td></td><td>{{ req.desk_remarks }}</td></tr>{% endif %}
-        </tbody>
-      </table></div>
-      {% if req.arranged_by %}<p class="help">Arranged by {{ req.arranged_by.name }} on {{ dt(req.arranged_at) }}</p>{% endif %}
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:150px">Item</th>
+              <th style="width:70px">Asked</th>
+              <th>Requester's note</th>
+              <th>For Administration use</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Guest house</td>
+              <td>{{ yn(req.need_guest_house) }}</td>
+              <td></td>
+              <td rowspan="2">{{ req.accommodation_summary }}</td>
+            </tr>
+            <tr>
+              <td>Hotel</td>
+              <td>{{ yn(req.need_hotel) }}</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Vehicle</td>
+              <td>{{ yn(req.need_vehicle) }}</td>
+              <td>
+                {% if req.need_vehicle and req.clean_vehicle_note %}
+                  <div style="white-space: pre-line; line-height: 1.5; font-size: 13px;">{{ req.clean_vehicle_note }}</div>
+                {% else %}
+                  {{ '-' if req.need_vehicle else '' }}
+                {% endif %}
+              </td>
+              <td>{% for t in req.trips %}<div>{{ t.trip_type }}: {{ t.vehicle_label }}{% if t.driver_name %} · {{
+                  t.driver_name }} {{ t.driver_phone or '' }}{% endif %}</div>{% else %}{{ '-' }}{% endfor %}</td>
+            </tr>
+            <tr>
+              <td>Food</td>
+              <td>{{ yn(req.need_food) }}</td>
+              <td>
+                {% if req.need_food and req.clean_food_note %}
+                  <div style="white-space: pre-line; line-height: 1.5; font-size: 13px;">{{ req.clean_food_note }}</div>
+                {% else %}
+                  {{ '-' if req.need_food else '' }}
+                {% endif %}
+              </td>
+              <td>{{ req.food_arrangement or '-' }}</td>
+            </tr>
+            <tr>
+              <td>Ticket</td>
+              <td>{{ yn(req.need_ticket) }}</td>
+              <td>
+                {% if req.need_ticket and req.clean_ticket_note %}
+                  <div style="white-space: pre-line; line-height: 1.5; font-size: 13px;">{{ req.clean_ticket_note }}</div>
+                {% else %}
+                  {{ '-' if req.need_ticket else '' }}
+                {% endif %}
+              </td>
+              <td>{{ req.ticket_arrangement or '-' }}</td>
+            </tr>
+            {% if req.desk_remarks %}<tr>
+              <td>Desk remarks</td>
+              <td></td>
+              <td></td>
+              <td>{{ req.desk_remarks }}</td>
+            </tr>{% endif %}
+          </tbody>
+        </table>
+      </div>
+      {% if req.arranged_by %}<p class="help">Arranged by {{ req.arranged_by.name }} on {{ dt(req.arranged_at) }}</p>{%
+      endif %}
     </section>
+
 
     {% if req.trips %}
     <section class="card">
       <h2>Vehicle trips</h2>
-      <div class="tbl-wrap"><table class="tbl">
-        <thead><tr><th>Type</th><th>From → To</th><th>Start</th><th>End</th><th>Vehicle</th><th>Driver</th><th class="right">Cost</th></tr></thead>
-        <tbody>{% for t in req.trips %}
-          <tr><td>{{ t.trip_type }}</td><td>{{ t.pickup or '' }} → {{ t.drop or '' }}</td><td class="nowrap">{{ dt(t.start) }}</td><td class="nowrap">{{ dt(t.end) }}</td>
-            <td>{{ t.vehicle_label }}</td><td>{{ t.driver_name or '' }} <span class="small muted">{{ t.driver_phone or '' }}</span></td><td class="right">{{ '%.0f'|format(t.cost) if t.cost else '' }}</td></tr>
-        {% endfor %}</tbody>
-      </table></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>From → To</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Vehicle</th>
+              <th>Driver</th>
+              <th class="right">Cost</th>
+            </tr>
+          </thead>
+          <tbody>{% for t in req.trips %}
+            <tr>
+              <td>{{ t.trip_type }}</td>
+              <td>{{ t.pickup or '' }} → {{ t.drop or '' }}</td>
+              <td class="nowrap">{{ dt(t.start) }}</td>
+              <td class="nowrap">{{ dt(t.end) }}</td>
+              <td>{{ t.vehicle_label }}</td>
+              <td>{{ t.driver_name or '' }} <span class="small muted">{{ t.driver_phone or '' }}</span></td>
+              <td class="right">{{ '%.0f'|format(t.cost) if t.cost else '' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </section>
     {% endif %}
   </div>
@@ -104,15 +237,17 @@
     <section class="card">
       <h2>Approvals</h2>
       <ul class="steps">
-      {% for t in timeline %}
-        {% if timeline[-1].round > 1 and (loop.first or t.round != loop.previtem.round) %}<li class="small muted" style="padding-left:0">Submission {{ t.round }}</li>{% endif %}
+        {% for t in timeline %}
+        {% if timeline[-1].round > 1 and (loop.first or t.round != loop.previtem.round) %}<li class="small muted"
+          style="padding-left:0">Submission {{ t.round }}</li>{% endif %}
         <li class="s-{{ t.status }}"><span class="dot"></span>
           <b>{{ t.label }}</b> <span class="badge b-{{ t.status }}">{{ t.status }}</span>
-          <div class="small">{% if t.acted_by %}{{ t.acted_by.name }} · {{ dt(t.acted_at) }}{% else %}{{ t.candidate_people|map(attribute='name')|join(' / ') }}{% endif %}</div>
+          <div class="small">{% if t.acted_by %}{{ t.acted_by.name }} · {{ dt(t.acted_at) }}{% else %}{{
+            t.candidate_people|map(attribute='name')|join(' / ') }}{% endif %}</div>
           {% if t.remarks %}<div class="small">“{{ t.remarks }}”</div>{% endif %}
           {% if t.note %}<div class="small muted">{{ t.note }}</div>{% endif %}
         </li>
-      {% else %}<li class="muted">No approval steps.</li>{% endfor %}
+        {% else %}<li class="muted">No approval steps.</li>{% endfor %}
       </ul>
     </section>
 
@@ -120,9 +255,11 @@
     <form method="post" action="{{ url_for('guest_house.cancel_request', req_id=req.id) }}" class="card">
       <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
       <h3>Cancel request</h3>
-      <textarea name="reason" rows="2" placeholder="Reason (required)" required aria-label="Cancellation reason"></textarea>
+      <textarea name="reason" rows="2" placeholder="Reason (required)" required
+        aria-label="Cancellation reason"></textarea>
       <button class="btn btn-bad" style="margin-top:8px">Cancel request</button>
-      {% if req.status in ('approved', 'arranged') %}<p class="help">Frees allocated rooms and vehicles. The desk is told to cancel hotel and hired-vehicle bookings.</p>{% endif %}
+      {% if req.status in ('approved', 'arranged') %}<p class="help">Frees allocated rooms and vehicles. The desk is
+        told to cancel hotel and hired-vehicle bookings.</p>{% endif %}
     </form>
     {% endif %}
 
@@ -139,8 +276,10 @@
     <section class="card">
       <h2>Activity</h2>
       {% for a in activity %}
-        <div class="small" style="padding:4px 0;border-bottom:1px solid var(--border)"><b>{{ a.action }}</b> · {{ a.actor.name if a.actor else 'system' }}
-          <div class="muted">{{ dt(a.created_at) }}{% if a.note %} - {{ a.note }}{% endif %}</div></div>
+      <div class="small" style="padding:4px 0;border-bottom:1px solid var(--border)"><b>{{ a.action }}</b> · {{
+        a.actor.name if a.actor else 'system' }}
+        <div class="muted">{{ dt(a.created_at) }}{% if a.note %} - {{ a.note }}{% endif %}</div>
+      </div>
       {% else %}<p class="muted small">No activity.</p>{% endfor %}
     </section>
   </div>

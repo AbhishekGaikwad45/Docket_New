@@ -11,8 +11,8 @@
     <td><input type="email" name="g_email" value="{{ gst.email or '' }}" aria-label="Email"></td>
     <td><input type="text" name="g_org" value="{{ gst.organisation or '' }}" aria-label="Organisation" placeholder="same as above"></td>
     <td><input type="text" name="g_designation" value="{{ gst.designation or '' }}" aria-label="Designation"></td>
-    <td><input type="datetime-local" name="g_arrival" value="{{ dtl(gst.arrival) }}" aria-label="Arrival" required></td>
-    <td><input type="datetime-local" name="g_departure" value="{{ dtl(gst.departure) }}" aria-label="Departure" required></td>
+    <td><input type="datetime-local" name="g_arrival" value="{{ dtl(gst.arrival) }}" aria-label="Arrival" required {% if min_arrival %}min="{{ min_arrival }}"{% endif %}></td>
+    <td><input type="datetime-local" name="g_departure" value="{{ dtl(gst.departure) }}" aria-label="Departure" required {% if min_departure %}min="{{ min_departure }}"{% endif %}></td>
     <td><button type="button" class="btn btn-sm btn-bad" data-remove aria-label="Remove guest">✕</button></td>
   </tr>
 {% endmacro %}
@@ -28,24 +28,40 @@
   </div>
 {% endmacro %}
 {% block page %}
+<style>
+.arr-need-block { display: block !important; padding: 12px 0; border-bottom: 1px dashed var(--border); }
+.arr-need-top { display: flex; align-items: center; gap: 20px; }
+.arr-need-top .q { width: 200px; font-weight: 500; }
+.arr-body { margin-top: 10px; width: 100%; }
+.arr-card { margin-top: 8px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; padding: 10px; background: #fafbfc; }
+.arr-card-title { font-weight: 600; font-size: 13px; margin-bottom: 8px; color: #1e40af; }
+.arr-card-title.food { color: #047857; }
+.arr-table { border-collapse: collapse; width: 100%; font-size: 12px; background: #ffffff; }
+.arr-table th, .arr-table td { border: 1px solid #cbd5e1; padding: 5px 8px; vertical-align: middle; }
+.arr-table th { background: #f1f5f9; font-weight: 600; text-align: center; white-space: nowrap; font-size: 12px; }
+.arr-table td.row-hdr { font-weight: 600; background: #f8fafc; white-space: nowrap; width: 110px; text-align: left; }
+.arr-table input[type="text"] { font-size: 11px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 3px; min-width: 85px; width: 100%; box-sizing: border-box; background: #fff; }
+.yn-sm { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; vertical-align: middle; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.yn-sm input { display: none !important; }
+.yn-sm label { padding: 3px 8px; cursor: pointer; font-size: 11px; font-weight: 600; background: #f8fafc; color: #64748b; line-height: 1.2; transition: all .15s ease; user-select: none; border: none; margin: 0; }
+.yn-sm label:first-of-type { border-right: 1px solid #cbd5e1; }
+.yn-sm input[value="1"]:checked + label { background: #0284c7; color: #ffffff; }
+.yn-sm input[value="0"]:checked + label { background: #e2e8f0; color: #475569; }
+</style>
 {% if copy_of %}<div class="flash flash-info">Copied from {{ copy_of.req_no }} - set the new dates for each guest.</div>{% endif %}
 <form method="post" class="stack" novalidate>
   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
 
   <section class="card">
     <h2>Visit</h2>
-    <div class="grid g3">
-      <div class="field"><label class="req" for="visit_type">Visit type</label>
+    <div class="grid g2">
+      <div class="field"><label class="req" for="visit_type">Purpose Type</label>
         <select id="visit_type" name="visit_type" required><option value="">Select…</option>
           {% for v in visit_types %}<option {{ 'selected' if req.visit_type == v }}>{{ v }}</option>{% endfor %}</select></div>
       <div class="field"><label for="organisation">Guests' organisation</label>
         <input type="text" id="organisation" name="organisation" value="{{ req.organisation or '' }}" placeholder="e.g. IMS RC Auditor, ABC Ltd."></div>
-      <div class="field"><label class="req" for="expenses_by">Expenses borne by</label>
-        <select id="expenses_by" name="expenses_by" data-switch="form">{% for v in expenses_by %}<option value="{{ v }}" {{ 'selected' if req.expenses_by == v }}>{{ v }}</option>{% endfor %}</select></div>
-      <div class="field span2"><label class="req" for="purpose">Purpose of visit</label>
+      <div class="field span2"><label class="req" for="purpose">Remarks</label>
         <textarea id="purpose" name="purpose" rows="2" required>{{ req.purpose or '' }}</textarea></div>
-      <div class="field" data-when="Department (cost centre)"><label class="req" for="cost_centre">Cost centre</label>
-        <input type="text" id="cost_centre" name="cost_centre" value="{{ req.cost_centre or '' }}"></div>
     </div>
   </section>
 
@@ -66,9 +82,66 @@
     <p class="help" style="margin-top:-6px">Just say what is needed - the administration desk allocates the room, hotel, vehicle and tickets after approval.</p>
     {{ need('need_guest_house', 'Guest house required?') }}
     {{ need('need_hotel', 'Hotel stay required?') }}
-    {{ need('need_vehicle', 'Vehicle required?', 'vehicle_note', 'Pickup / drop points and timings, local use…', 'e.g. Pickup from Ratnagiri station 17 Mar 10:30, local plant visits, drop on 19 Mar.') }}
-    {{ need('need_food', 'Food arrangement?', 'food_note', 'Veg / non-veg / Jain, allergies, meals needed…') }}
-    {{ need('need_ticket', 'Travel ticket?', 'ticket_note', 'From - to, date, mode (flight/train/bus), class…') }}
+
+    <!-- Vehicle Required -->
+    <div class="need arr-need-block" id="vehicle_need_block">
+      <div class="arr-need-top">
+        <div class="q">Vehicle required?</div>
+        <div class="yn" role="radiogroup" aria-label="Vehicle required?">
+          <input type="radio" id="need_vehicle1" name="need_vehicle" value="1" {{ 'checked' if req.need_vehicle }}><label for="need_vehicle1">Yes</label>
+          <input type="radio" id="need_vehicle0" name="need_vehicle" value="0" {{ 'checked' if not req.need_vehicle }}><label for="need_vehicle0">No</label>
+        </div>
+      </div>
+      <div id="vehicle_arr_wrap" class="arr-body" style="display: {{ 'block' if req.need_vehicle else 'none' }};">
+        <div id="vehicle_dynamic_container"></div>
+        <input type="hidden" name="vehicle_note" id="vehicle_note" value="{{ req.vehicle_note or '' }}">
+      </div>
+    </div>
+
+    <!-- Food Arrangement -->
+    <div class="need arr-need-block" id="food_need_block">
+      <div class="arr-need-top">
+        <div class="q">Food arrangement?</div>
+        <div class="yn" role="radiogroup" aria-label="Food arrangement?">
+          <input type="radio" id="need_food1" name="need_food" value="1" {{ 'checked' if req.need_food }}><label for="need_food1">Yes</label>
+          <input type="radio" id="need_food0" name="need_food" value="0" {{ 'checked' if not req.need_food }}><label for="need_food0">No</label>
+        </div>
+      </div>
+      <div id="food_arr_wrap" class="arr-body" style="display: {{ 'block' if req.need_food else 'none' }};">
+        <div id="food_dynamic_container"></div>
+        <input type="hidden" name="food_note" id="food_note" value="{{ req.food_note or '' }}">
+      </div>
+    </div>
+
+    <!-- Travel Ticket Required -->
+    <div class="need arr-need-block" id="ticket_need_block">
+      <div class="arr-need-top">
+        <div class="q">Travel ticket?</div>
+        <div class="yn" role="radiogroup" aria-label="Travel ticket?">
+          <input type="radio" id="need_ticket1" name="need_ticket" value="1" {{ 'checked' if req.need_ticket }}><label for="need_ticket1">Yes</label>
+          <input type="radio" id="need_ticket0" name="need_ticket" value="0" {{ 'checked' if not req.need_ticket }}><label for="need_ticket0">No</label>
+        </div>
+      </div>
+      <div id="ticket_arr_wrap" class="arr-body" style="display: {{ 'block' if req.need_ticket else 'none' }};">
+        <div class="arr-card" style="max-width:680px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start">
+            <div>
+              <select id="travel_mode" name="travel_mode" aria-label="Travel mode" style="width:100%;height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:4px;background:#fff;font-size:13px;box-sizing:border-box">
+                <option value="">Select travel mode…</option>
+                <option value="Air">Air</option>
+                <option value="Rail">Rail</option>
+                <option value="Flight">Flight</option>
+              </select>
+            </div>
+            <div>
+              <textarea id="ticket_details" rows="2" placeholder="From - to, date, class, preferred timings…" aria-label="Travel ticket details" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:4px;padding:6px 8px;font-size:12px"></textarea>
+            </div>
+          </div>
+          <input type="hidden" name="ticket_note" id="ticket_note" value="{{ req.ticket_note or '' }}">
+        </div>
+      </div>
+    </div>
+
     <div class="field" style="margin-top:12px"><label for="other_note">Anything else</label>
       <textarea id="other_note" name="other_note" rows="2" placeholder="Special requests, accessibility needs, split between guest house and hotel…">{{ req.other_note or '' }}</textarea></div>
   </section>
@@ -90,6 +163,437 @@
 {% endblock %}
 {% block scripts %}
 <script>
+let vehicleState = {};
+let foodState = {};
+
+// Parse existing notes on load
+(function initNotes() {
+  const vEl = document.getElementById("vehicle_note");
+  if (vEl && vEl.value) {
+    const raw = vEl.value;
+    const match = raw.match(/<!--VEHICLE_DATA:(.*?)-->/s);
+    if (match) {
+      try { vehicleState = JSON.parse(match[1]); } catch(e) {}
+    }
+  }
+
+  const fEl = document.getElementById("food_note");
+  if (fEl && fEl.value) {
+    const raw = fEl.value;
+    const match = raw.match(/<!--FOOD_DATA:(.*?)-->/s);
+    if (match) {
+      try { foodState = JSON.parse(match[1]); } catch(e) {}
+    }
+  }
+
+  const tEl = document.getElementById("ticket_note");
+  const modeSelect = document.getElementById("travel_mode");
+  const detailsText = document.getElementById("ticket_details");
+  if (tEl && modeSelect && detailsText && tEl.value) {
+    const raw = tEl.value.trim();
+    let mode = "";
+    const match = raw.match(/<!--TRAVEL_MODE:(.*?)-->/);
+    if (match) {
+      mode = match[1];
+    } else {
+      const m = raw.match(/^Mode:\s*([^|\n]+)/i);
+      if (m) mode = m[1].trim();
+    }
+    if (mode) modeSelect.value = mode;
+
+    let cleanDetails = raw.replace(/<!--TRAVEL_MODE:.*?-->/g, "").replace(/^Mode:\s*[^|\n]+(\s*\|\s*)?/i, "").trim();
+    detailsText.value = cleanDetails;
+  }
+})();
+
+function getDateList(arrVal, depVal) {
+  if (!arrVal || !depVal) return [];
+  const d1 = new Date(arrVal.slice(0, 10) + "T00:00:00");
+  const d2 = new Date(depVal.slice(0, 10) + "T00:00:00");
+  if (isNaN(d1.getTime()) || isNaN(d2.getTime()) || d2 < d1) return [];
+  const dates = [];
+  const cur = new Date(d1);
+  let count = 0;
+  while (cur <= d2 && count < 60) {
+    const y = cur.getFullYear();
+    const m = String(cur.getMonth() + 1).padStart(2, '0');
+    const d = String(cur.getDate()).padStart(2, '0');
+    dates.push(`${y}-${m}-${d}`);
+    cur.setDate(cur.getDate() + 1);
+    count++;
+  }
+  return dates;
+}
+
+function formatDateShort(dStr) {
+  try {
+    const p = dStr.split('-');
+    const dt = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+    return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  } catch(e) {
+    return dStr;
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+function getDaysForGuest(arrival, departure) {
+  if (arrival && departure) {
+    const list = getDateList(arrival, departure);
+    if (list.length > 0) {
+      return list.map((dStr, i) => ({
+        key: dStr,
+        label: `Day ${i + 1}`,
+        subLabel: formatDateShort(dStr)
+      }));
+    }
+  }
+  // Default to Day 1 through Day 7 when arrival/departure are not set yet
+  const defaultDays = [];
+  for (let i = 1; i <= 7; i++) {
+    defaultDays.push({
+      key: `day_${i}`,
+      label: `Day ${i}`,
+      subLabel: ''
+    });
+  }
+  return defaultDays;
+}
+
+function getGuestsData() {
+  const rows = [...document.querySelectorAll("[data-rows] [data-row]")];
+  if (!rows.length) {
+    return [{ idx: 0, name: "Guest 1", arrival: "", departure: "", days: getDaysForGuest("", "") }];
+  }
+  return rows.map((r, idx) => {
+    const nameEl = r.querySelector("[name=g_name]");
+    const arrEl = r.querySelector("[name=g_arrival]");
+    const depEl = r.querySelector("[name=g_departure]");
+    const name = (nameEl && nameEl.value.trim()) || `Guest ${idx + 1}`;
+    const arrival = arrEl ? arrEl.value : "";
+    const departure = depEl ? depEl.value : "";
+    const days = getDaysForGuest(arrival, departure);
+    return { idx, name, arrival, departure, days };
+  });
+}
+
+function renderDailyArrangements() {
+  const vContainer = document.getElementById("vehicle_dynamic_container");
+  const fContainer = document.getElementById("food_dynamic_container");
+  if (!vContainer && !fContainer) return;
+
+  const guests = getGuestsData();
+
+  // 1. Render Vehicle Arrangement Table (Pickup & Drop checkboxes + pickup locations for each day)
+  if (vContainer) {
+    let html = "";
+    guests.forEach(g => {
+      html += `
+        <div class="arr-card">
+          <div class="arr-card-title">Guest ${g.idx + 1}: ${escapeHtml(g.name)}</div>
+          <div class="tbl-wrap" style="overflow-x:auto">
+            <table class="arr-table">
+              <thead>
+                <tr>
+                  <th style="min-width:100px;text-align:left">Guest ${g.idx + 1}</th>
+                  ${g.days.map(d => {
+                    const k = `${g.idx}_${d.key}`;
+                    const st = vehicleState[k] || {};
+                    const showLoc = !!(st.p || st.d);
+                    return `
+                      <th style="min-width:85px;text-align:center">
+                        ${d.label}
+                        ${d.subLabel ? `<div class="small muted" style="font-weight:normal;font-size:11px">${d.subLabel}</div>` : ''}
+                      </th>
+                      <th data-v-loc-col="${k}" style="${showLoc ? '' : 'display:none;'}min-width:110px;text-align:center">Location</th>
+                    `;
+                  }).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="row-hdr">Pickup</td>
+                  ${g.days.map(d => {
+                    const k = `${g.idx}_${d.key}`;
+                    const st = vehicleState[k] || {};
+                    const showLoc = !!(st.p || st.d);
+                    return `
+                      <td style="text-align:center">
+                        <div class="yn yn-sm" role="radiogroup" aria-label="Pickup">
+                          <input type="radio" id="vp_${g.idx}_${d.key}_1" name="vp_${g.idx}_${d.key}" value="1" data-v-pickup data-gidx="${g.idx}" data-dkey="${d.key}" ${st.p ? 'checked' : ''}>
+                          <label for="vp_${g.idx}_${d.key}_1">Yes</label>
+                          <input type="radio" id="vp_${g.idx}_${d.key}_0" name="vp_${g.idx}_${d.key}" value="0" data-v-pickup-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.p ? 'checked' : ''}>
+                          <label for="vp_${g.idx}_${d.key}_0">No</label>
+                        </div>
+                      </td>
+                      <td data-v-loc-col="${k}" style="${showLoc ? '' : 'display:none'}">
+                        <input type="text" data-v-pickup-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="Location" value="${escapeHtml(st.pl || '')}" style="display:${st.p ? 'block' : 'none'}">
+                      </td>
+                    `;
+                  }).join('')}
+                </tr>
+                <tr>
+                  <td class="row-hdr">Drop</td>
+                  ${g.days.map(d => {
+                    const k = `${g.idx}_${d.key}`;
+                    const st = vehicleState[k] || {};
+                    const showLoc = !!(st.p || st.d);
+                    return `
+                      <td style="text-align:center">
+                        <div class="yn yn-sm" role="radiogroup" aria-label="Drop">
+                          <input type="radio" id="vd_${g.idx}_${d.key}_1" name="vd_${g.idx}_${d.key}" value="1" data-v-drop data-gidx="${g.idx}" data-dkey="${d.key}" ${st.d ? 'checked' : ''}>
+                          <label for="vd_${g.idx}_${d.key}_1">Yes</label>
+                          <input type="radio" id="vd_${g.idx}_${d.key}_0" name="vd_${g.idx}_${d.key}" value="0" data-v-drop-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.d ? 'checked' : ''}>
+                          <label for="vd_${g.idx}_${d.key}_0">No</label>
+                        </div>
+                      </td>
+                      <td data-v-loc-col="${k}" style="${showLoc ? '' : 'display:none'}">
+                        <input type="text" data-v-drop-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="Location" value="${escapeHtml(st.dl || '')}" style="display:${st.d ? 'block' : 'none'}">
+                      </td>
+                    `;
+                  }).join('')}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    });
+    vContainer.innerHTML = html;
+  }
+
+  // 2. Render Food Arrangement Table (Morning, Evening, Night Yes/No toggles + Location for each day)
+  if (fContainer) {
+    let html = "";
+    guests.forEach(g => {
+      html += `
+        <div class="arr-card">
+          <div class="arr-card-title food">Guest ${g.idx + 1}: ${escapeHtml(g.name)}</div>
+          <div class="tbl-wrap" style="overflow-x:auto">
+            <table class="arr-table">
+              <thead>
+                <tr>
+                  <th style="min-width:100px;text-align:left">Guest ${g.idx + 1}</th>
+                  ${g.days.map(d => {
+                    const k = `${g.idx}_${d.key}`;
+                    const st = foodState[k] || {};
+                    const showLoc = !!(st.m || st.e || st.n);
+                    return `
+                      <th style="min-width:85px;text-align:center">
+                        ${d.label}
+                        ${d.subLabel ? `<div class="small muted" style="font-weight:normal;font-size:11px">${d.subLabel}</div>` : ''}
+                      </th>
+                      <th data-f-loc-col="${k}" style="${showLoc ? '' : 'display:none;'}min-width:110px;text-align:center">Location</th>
+                    `;
+                  }).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="row-hdr">Morning</td>
+                  ${g.days.map(d => {
+                    const k = `${g.idx}_${d.key}`;
+                    const st = foodState[k] || {};
+                    const showLoc = !!(st.m || st.e || st.n);
+                    return `
+                      <td style="text-align:center">
+                        <div class="yn yn-sm" role="radiogroup" aria-label="Morning">
+                          <input type="radio" id="fm_${g.idx}_${d.key}_1" name="fm_${g.idx}_${d.key}" value="1" data-f-morning data-gidx="${g.idx}" data-dkey="${d.key}" ${st.m ? 'checked' : ''}>
+                          <label for="fm_${g.idx}_${d.key}_1">Yes</label>
+                          <input type="radio" id="fm_${g.idx}_${d.key}_0" name="fm_${g.idx}_${d.key}" value="0" data-f-morning-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.m ? 'checked' : ''}>
+                          <label for="fm_${g.idx}_${d.key}_0">No</label>
+                        </div>
+                      </td>
+                      <td data-f-loc-col="${k}" style="${showLoc ? '' : 'display:none'}">
+                        <input type="text" data-f-morning-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="Location" value="${escapeHtml(st.ml || '')}" style="display:${st.m ? 'block' : 'none'}">
+                      </td>
+                    `;
+                  }).join('')}
+                </tr>
+                <tr>
+                  <td class="row-hdr">Evening</td>
+                  ${g.days.map(d => {
+                    const k = `${g.idx}_${d.key}`;
+                    const st = foodState[k] || {};
+                    const showLoc = !!(st.m || st.e || st.n);
+                    return `
+                      <td style="text-align:center">
+                        <div class="yn yn-sm" role="radiogroup" aria-label="Evening">
+                          <input type="radio" id="fe_${g.idx}_${d.key}_1" name="fe_${g.idx}_${d.key}" value="1" data-f-evening data-gidx="${g.idx}" data-dkey="${d.key}" ${st.e ? 'checked' : ''}>
+                          <label for="fe_${g.idx}_${d.key}_1">Yes</label>
+                          <input type="radio" id="fe_${g.idx}_${d.key}_0" name="fe_${g.idx}_${d.key}" value="0" data-f-evening-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.e ? 'checked' : ''}>
+                          <label for="fe_${g.idx}_${d.key}_0">No</label>
+                        </div>
+                      </td>
+                      <td data-f-loc-col="${k}" style="${showLoc ? '' : 'display:none'}">
+                        <input type="text" data-f-evening-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="Location" value="${escapeHtml(st.el || '')}" style="display:${st.e ? 'block' : 'none'}">
+                      </td>
+                    `;
+                  }).join('')}
+                </tr>
+                <tr>
+                  <td class="row-hdr">Night</td>
+                  ${g.days.map(d => {
+                    const k = `${g.idx}_${d.key}`;
+                    const st = foodState[k] || {};
+                    const showLoc = !!(st.m || st.e || st.n);
+                    return `
+                      <td style="text-align:center">
+                        <div class="yn yn-sm" role="radiogroup" aria-label="Night">
+                          <input type="radio" id="fn_${g.idx}_${d.key}_1" name="fn_${g.idx}_${d.key}" value="1" data-f-night data-gidx="${g.idx}" data-dkey="${d.key}" ${st.n ? 'checked' : ''}>
+                          <label for="fn_${g.idx}_${d.key}_1">Yes</label>
+                          <input type="radio" id="fn_${g.idx}_${d.key}_0" name="fn_${g.idx}_${d.key}" value="0" data-f-night-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.n ? 'checked' : ''}>
+                          <label for="fn_${g.idx}_${d.key}_0">No</label>
+                        </div>
+                      </td>
+                      <td data-f-loc-col="${k}" style="${showLoc ? '' : 'display:none'}">
+                        <input type="text" data-f-night-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="Location" value="${escapeHtml(st.nl || '')}" style="display:${st.n ? 'block' : 'none'}">
+                      </td>
+                    `;
+                  }).join('')}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    });
+    fContainer.innerHTML = html;
+  }
+}
+
+function updateArrangementsVisibility() {
+  const vYes = document.getElementById("need_vehicle1")?.checked;
+  const vWrap = document.getElementById("vehicle_arr_wrap");
+  if (vWrap) vWrap.style.display = vYes ? "block" : "none";
+
+  const fYes = document.getElementById("need_food1")?.checked;
+  const fWrap = document.getElementById("food_arr_wrap");
+  if (fWrap) fWrap.style.display = fYes ? "block" : "none";
+
+  const tYes = document.getElementById("need_ticket1")?.checked;
+  const tWrap = document.getElementById("ticket_arr_wrap");
+  if (tWrap) tWrap.style.display = tYes ? "block" : "none";
+}
+
+// Track vehicle and food input/toggle changes
+document.addEventListener("change", (e) => {
+  if (e.target.matches("[data-v-pickup], [data-v-pickup-no]")) {
+    const gidx = e.target.dataset.gidx;
+    const dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    vehicleState[k] = vehicleState[k] || {};
+    vehicleState[k].p = e.target.value === "1";
+
+    const showLoc = !!(vehicleState[k].p || vehicleState[k].d);
+    document.querySelectorAll(`[data-v-loc-col="${k}"]`).forEach(el => {
+      el.style.display = showLoc ? "" : "none";
+    });
+
+    const loc = document.querySelector(`input[data-v-pickup-loc][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
+    if (loc) {
+      loc.style.display = vehicleState[k].p ? "block" : "none";
+      if (vehicleState[k].p) loc.focus();
+    }
+  }
+  if (e.target.matches("[data-v-drop], [data-v-drop-no]")) {
+    const gidx = e.target.dataset.gidx;
+    const dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    vehicleState[k] = vehicleState[k] || {};
+    vehicleState[k].d = e.target.value === "1";
+
+    const showLoc = !!(vehicleState[k].p || vehicleState[k].d);
+    document.querySelectorAll(`[data-v-loc-col="${k}"]`).forEach(el => {
+      el.style.display = showLoc ? "" : "none";
+    });
+
+    const loc = document.querySelector(`input[data-v-drop-loc][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
+    if (loc) {
+      loc.style.display = vehicleState[k].d ? "block" : "none";
+      if (vehicleState[k].d) loc.focus();
+    }
+  }
+  if (e.target.matches("[data-f-morning], [data-f-morning-no]")) {
+    const gidx = e.target.dataset.gidx;
+    const dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    foodState[k] = foodState[k] || {};
+    foodState[k].m = e.target.value === "1";
+
+    const showLoc = !!(foodState[k].m || foodState[k].e || foodState[k].n);
+    document.querySelectorAll(`[data-f-loc-col="${k}"]`).forEach(el => {
+      el.style.display = showLoc ? "" : "none";
+    });
+
+    const loc = document.querySelector(`input[data-f-morning-loc][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
+    if (loc) {
+      loc.style.display = foodState[k].m ? "block" : "none";
+      if (foodState[k].m) loc.focus();
+    }
+  }
+  if (e.target.matches("[data-f-evening], [data-f-evening-no]")) {
+    const gidx = e.target.dataset.gidx;
+    const dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    foodState[k] = foodState[k] || {};
+    foodState[k].e = e.target.value === "1";
+
+    const showLoc = !!(foodState[k].m || foodState[k].e || foodState[k].n);
+    document.querySelectorAll(`[data-f-loc-col="${k}"]`).forEach(el => {
+      el.style.display = showLoc ? "" : "none";
+    });
+
+    const loc = document.querySelector(`input[data-f-evening-loc][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
+    if (loc) {
+      loc.style.display = foodState[k].e ? "block" : "none";
+      if (foodState[k].e) loc.focus();
+    }
+  }
+  if (e.target.matches("[data-f-night], [data-f-night-no]")) {
+    const gidx = e.target.dataset.gidx;
+    const dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    foodState[k] = foodState[k] || {};
+    foodState[k].n = e.target.value === "1";
+
+    const showLoc = !!(foodState[k].m || foodState[k].e || foodState[k].n);
+    document.querySelectorAll(`[data-f-loc-col="${k}"]`).forEach(el => {
+      el.style.display = showLoc ? "" : "none";
+    });
+
+    const loc = document.querySelector(`input[data-f-night-loc][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
+    if (loc) {
+      loc.style.display = foodState[k].n ? "block" : "none";
+      if (foodState[k].n) loc.focus();
+    }
+  }
+});
+
+document.addEventListener("input", (e) => {
+  if (e.target.matches("[data-v-pickup-loc], [data-v-drop-loc]")) {
+    const gidx = e.target.dataset.gidx;
+    const dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    vehicleState[k] = vehicleState[k] || {};
+    if (e.target.hasAttribute("data-v-pickup-loc")) vehicleState[k].pl = e.target.value.trim();
+    if (e.target.hasAttribute("data-v-drop-loc")) vehicleState[k].dl = e.target.value.trim();
+  }
+  if (e.target.matches("[data-f-morning-loc], [data-f-evening-loc], [data-f-night-loc]")) {
+    const gidx = e.target.dataset.gidx;
+    const dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    foodState[k] = foodState[k] || {};
+    if (e.target.hasAttribute("data-f-morning-loc")) foodState[k].ml = e.target.value.trim();
+    if (e.target.hasAttribute("data-f-evening-loc")) foodState[k].el = e.target.value.trim();
+    if (e.target.hasAttribute("data-f-night-loc")) foodState[k].nl = e.target.value.trim();
+  }
+});
+
+// Update tables when dates or guests change
 document.getElementById("copyDates").addEventListener("click", () => {
   const rows = [...document.querySelectorAll("[data-rows] [data-row]")];
   if (!rows.length) return;
@@ -98,6 +602,179 @@ document.getElementById("copyDates").addEventListener("click", () => {
     const ra = r.querySelector("[name=g_arrival]"), rd = r.querySelector("[name=g_departure]");
     if (!ra.value) ra.value = a; if (!rd.value) rd.value = d;
   });
+  renderDailyArrangements();
 });
+
+document.addEventListener("change", (e) => {
+  if (e.target.name === "g_arrival") {
+    const row = e.target.closest("[data-row]");
+    if (row) {
+      const dep = row.querySelector("[name=g_departure]");
+      if (dep && e.target.value) {
+        if (!dep.min || e.target.value > dep.min) {
+          dep.min = e.target.value;
+        }
+      }
+    }
+    renderDailyArrangements();
+  }
+  if (e.target.name === "g_departure" || e.target.name === "g_name") {
+    renderDailyArrangements();
+  }
+  if (e.target.name === "need_vehicle" || e.target.name === "need_food" || e.target.name === "need_ticket") {
+    updateArrangementsVisibility();
+    renderDailyArrangements();
+  }
+});
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest("#vehicle_need_block .yn") || e.target.closest("#food_need_block .yn") || e.target.closest("#ticket_need_block .yn")) {
+    setTimeout(updateArrangementsVisibility, 0);
+  }
+  if (e.target.matches("[data-add]") || e.target.closest("[data-add]") ||
+      e.target.matches("[data-remove]") || e.target.closest("[data-remove]")) {
+    setTimeout(() => {
+      renderDailyArrangements();
+      updateArrangementsVisibility();
+    }, 60);
+  }
+});
+
+// Validate backdated dates and synthesize notes on submit
+const reqForm = document.querySelector("form.stack");
+if (reqForm) {
+  reqForm.addEventListener("submit", (e) => {
+    const allowBackdated = {{ 'true' if allow_backdated else 'false' }};
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - 1);
+    const rows = document.querySelectorAll("[data-rows] [data-row]");
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const arrInput = row.querySelector("[name=g_arrival]");
+      const depInput = row.querySelector("[name=g_departure]");
+      if (!arrInput || !depInput || !arrInput.value || !depInput.value) continue;
+      const arr = new Date(arrInput.value);
+      const dep = new Date(depInput.value);
+      const guestName = row.querySelector("[name=g_name]")?.value || `Guest ${i + 1}`;
+
+      if (!allowBackdated) {
+        if (arr < now) {
+          alert(`${guestName}: Arrival date cannot be backdated or in the past.`);
+          arrInput.focus();
+          e.preventDefault();
+          return false;
+        }
+        if (dep < now) {
+          alert(`${guestName}: Departure date cannot be backdated or in the past.`);
+          depInput.focus();
+          e.preventDefault();
+          return false;
+        }
+      }
+      if (dep <= arr) {
+        alert(`${guestName}: Departure must be after arrival.`);
+        depInput.focus();
+        e.preventDefault();
+        return false;
+      }
+    }
+
+    const guests = getGuestsData();
+
+    // 1. Synthesize vehicle note
+    const needVehicleYes = document.querySelector("#need_vehicle1")?.checked;
+    if (needVehicleYes) {
+      const schedLines = [];
+      guests.forEach(g => {
+        const gLines = [];
+        g.days.forEach(d => {
+          const k = `${g.idx}_${d.key}`;
+          const st = vehicleState[k];
+          if (st && (st.p || st.d)) {
+            const parts = [];
+            if (st.p) parts.push("Pickup" + (st.pl ? ` (${st.pl})` : ""));
+            if (st.d) parts.push("Drop" + (st.dl ? ` (${st.dl})` : ""));
+            if (parts.length) {
+              gLines.push(`  • ${d.label}${d.subLabel ? ' (' + d.subLabel + ')' : ''}: ${parts.join(", ")}`);
+            }
+          }
+        });
+        if (gLines.length) {
+          schedLines.push(`Guest ${g.idx + 1} (${g.name}):\n` + gLines.join("\n"));
+        }
+      });
+
+      let finalV = "";
+      if (schedLines.length) {
+        finalV = "Daily Vehicle Schedule:\n" + schedLines.join("\n\n");
+      }
+      if (!finalV) {
+        finalV = "Vehicle required as requested.";
+      }
+      finalV += `\n<!--VEHICLE_DATA:${JSON.stringify(vehicleState)}-->`;
+      const vNoteInput = document.getElementById("vehicle_note");
+      if (vNoteInput) vNoteInput.value = finalV.trim();
+    }
+
+    // 2. Synthesize food note
+    const needFoodYes = document.querySelector("#need_food1")?.checked;
+    if (needFoodYes) {
+      const schedLines = [];
+      guests.forEach(g => {
+        const gLines = [];
+        g.days.forEach(d => {
+          const k = `${g.idx}_${d.key}`;
+          const st = foodState[k];
+          if (st && (st.m || st.e || st.n)) {
+            const meals = [];
+            if (st.m) meals.push("Morning" + (st.ml ? ` (${st.ml})` : ""));
+            if (st.e) meals.push("Evening" + (st.el ? ` (${st.el})` : ""));
+            if (st.n) meals.push("Night" + (st.nl ? ` (${st.nl})` : ""));
+            gLines.push(`  • ${d.label}${d.subLabel ? ' (' + d.subLabel + ')' : ''}: ${meals.join(", ")}`);
+          }
+        });
+        if (gLines.length) {
+          schedLines.push(`Guest ${g.idx + 1} (${g.name}):\n` + gLines.join("\n"));
+        }
+      });
+
+      let finalF = "";
+      if (schedLines.length) {
+        finalF = "Daily Food Schedule:\n" + schedLines.join("\n\n");
+      }
+      if (!finalF) {
+        finalF = "Food arrangement required as requested.";
+      }
+      finalF += `\n<!--FOOD_DATA:${JSON.stringify(foodState)}-->`;
+      const fNoteInput = document.getElementById("food_note");
+      if (fNoteInput) fNoteInput.value = finalF.trim();
+    }
+
+    // 3. Synthesize ticket note
+    const needTicketYes = document.querySelector("#need_ticket1")?.checked;
+    if (needTicketYes) {
+      const modeSelect = document.getElementById("travel_mode");
+      const mode = modeSelect ? modeSelect.value.trim() : "";
+      if (!mode) {
+        alert("Please select a Travel mode (Air / Rail / Flight).");
+        if (modeSelect) modeSelect.focus();
+        e.preventDefault();
+        return false;
+      }
+      const details = document.getElementById("ticket_details")?.value.trim() || "";
+      let finalT = `Travel Mode: ${mode}`;
+      if (details) {
+        finalT += `\nDetails: ${details}`;
+      }
+      finalT += `\n<!--TRAVEL_MODE:${mode}-->`;
+      const tNoteInput = document.getElementById("ticket_note");
+      if (tNoteInput) tNoteInput.value = finalT.trim();
+    }
+  });
+}
+
+// Initial render and visibility
+updateArrangementsVisibility();
+renderDailyArrangements();
 </script>
 {% endblock %}

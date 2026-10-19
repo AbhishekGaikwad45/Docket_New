@@ -15,12 +15,33 @@ from core.notify import mark_read, notify
 from core.registry import get_setting
 from core.security import permission_required
 
-from .models import (BOOKED, EXPENSES_BY, STATUSES, STAY_TYPES, TRIP_TYPES, VISIT_TYPES, Guest, GuestHouse,
-                     GuestRequest, Hotel, Room, Trip, Vehicle, room_board, room_conflicts, vehicle_conflicts)
+from .models import (BOOKED, EXPENSES_BY, STATUSES, STAY_TYPES, TRIP_TYPES, VISIT_TYPES,
+                     ExpenseBorneBy, Guest, GuestHouse, GuestRequest,
+                     Hotel, Room, Trip, Vehicle, VisitPurpose, room_board, room_conflicts, vehicle_conflicts)
 
 CODE = "guest_house"
 bp = Blueprint(CODE, __name__, template_folder="templates")
 NEEDS = ("need_guest_house", "need_hotel", "need_vehicle", "need_food", "need_ticket")
+
+
+def get_visit_types():
+    try:
+        active = [p.name for p in VisitPurpose.query.filter_by(is_active=True).order_by(VisitPurpose.name).all()]
+        if active:
+            return active
+    except Exception:
+        pass
+    return VISIT_TYPES
+
+
+def get_expenses_by():
+    try:
+        active = [e.name for e in ExpenseBorneBy.query.filter_by(is_active=True).order_by(ExpenseBorneBy.name).all()]
+        if active:
+            return active
+    except Exception:
+        pass
+    return EXPENSES_BY
 
 
 def P(*perms):
@@ -119,11 +140,15 @@ def _read_form(req):
 def _read_form_fields(req):
     f = request.form
     errors = []
-    req.visit_type = f.get("visit_type") if f.get("visit_type") in VISIT_TYPES else ""
+    valid_visit_types = set(get_visit_types())
+    if req.visit_type:
+        valid_visit_types.add(req.visit_type)
+    req.visit_type = f.get("visit_type") if f.get("visit_type") in valid_visit_types else ""
     req.purpose = f.get("purpose", "").strip()
     req.organisation = f.get("organisation", "").strip()
-    req.expenses_by = f.get("expenses_by") if f.get("expenses_by") in EXPENSES_BY else "Company"
-    req.cost_centre = f.get("cost_centre", "").strip()
+    # expenses_by is set by Admin Desk, default to existing or Company
+    if not req.expenses_by:
+        req.expenses_by = "Company"
     for need in NEEDS:
         setattr(req, need, f.get(need) == "1")
     for note in ("vehicle_note", "food_note", "ticket_note", "other_note"):
@@ -132,13 +157,15 @@ def _read_form_fields(req):
     if not req.visit_type:
         errors.append("Choose the visit type.")
     if not req.purpose:
-        errors.append("Purpose of visit is required.")
-    if req.expenses_by.startswith("Department") and not req.cost_centre:
-        errors.append("Enter the cost centre when the department bears the expenses.")
+        errors.append("Remarks are required.")
     if req.need_guest_house and req.need_hotel and not req.other_note:
         errors.append("Both guest house and hotel are requested - explain the split in 'Anything else'.")
-    if req.need_ticket and not req.ticket_note:
-        errors.append("Give the travel details (from / to / date / mode) for the ticket.")
+    if req.need_ticket:
+        t_mode = f.get("travel_mode", "").strip() or req.travel_mode
+        if not t_mode:
+            errors.append("Select the travel mode (Air / Rail / Flight).")
+        elif not req.ticket_note:
+            req.ticket_note = f"Mode: {t_mode}"
     if req.need_vehicle and not req.vehicle_note:
         errors.append("Describe the vehicle need (pickup point, timing, local use).")
 
@@ -164,8 +191,15 @@ def _read_form_fields(req):
             continue
         if guest.departure <= guest.arrival:
             errors.append(f"{label}: departure must be after arrival.")
-        if earliest and guest.arrival < earliest.replace(second=0, microsecond=0) - timedelta(minutes=1):
-            errors.append(f"{label}: arrival is too soon or in the past.")
+        if not get_setting(CODE, "allow_backdated"):
+            now_floored = now.replace(second=0, microsecond=0) - timedelta(minutes=1)
+            if guest.arrival < now_floored:
+                errors.append(f"{label}: arrival is too soon or in the past (backdated).")
+            if guest.departure < now_floored:
+                errors.append(f"{label}: departure is in the past (backdated).")
+            min_notice = get_setting(CODE, "min_notice_hours")
+            if min_notice > 0 and guest.arrival < now_floored + timedelta(hours=min_notice):
+                errors.append(f"{label}: arrival is too soon or in the past (minimum notice of {min_notice} hour(s) required).")
         if (guest.departure - guest.arrival).days > max_days:
             errors.append(f"{label}: stay is longer than {max_days} days.")
         if guest.mobile and not guest.mobile.replace("+", "").replace(" ", "").isdigit():
@@ -174,6 +208,7 @@ def _read_form_fields(req):
         errors.append("Add at least one guest.")
     if len(req.guests) > get_setting(CODE, "max_guests"):
         errors.append(f"At most {get_setting(CODE, 'max_guests')} guests per request.")
+
     return errors
 
 
@@ -204,8 +239,17 @@ def _form_page(req, errors=(), copy_of=None):
     with db.session.no_autoflush:
         guests = req.guests or [Guest()]
         chain = approvals.plan(CODE, g.user, req.approval_context())
+        vt = get_visit_types()
+        if req.visit_type and req.visit_type not in vt:
+            vt = [req.visit_type] + [x for x in vt if x != req.visit_type]
+        now = datetime.now()
+        allow_backdated = get_setting(CODE, "allow_backdated")
+        min_notice = get_setting(CODE, "min_notice_hours")
+        min_arrival = None if allow_backdated else (now + timedelta(hours=min_notice)).strftime("%Y-%m-%dT%H:%M")
+        min_departure = None if allow_backdated else now.strftime("%Y-%m-%dT%H:%M")
         return render_template("guest_house/request_form.html", req=req, guests=guests, chain=chain, copy_of=copy_of,
-                           visit_types=VISIT_TYPES, expenses_by=EXPENSES_BY, max_guests=get_setting(CODE, "max_guests"))
+                               visit_types=vt, max_guests=get_setting(CODE, "max_guests"),
+                               allow_backdated=allow_backdated, min_arrival=min_arrival, min_departure=min_departure)
 
 
 @bp.route("/requests/new", methods=["GET", "POST"])
@@ -268,7 +312,25 @@ def request_view(req_id):
     return render_template(
         "guest_house/request_view.html", req=req, task=task, timeline=approvals.timeline(CODE, req.id),
         can_decide=bool(task and approvals.can_act(task, g.user)), activity=activity,
-        is_desk=can(g.user, CODE, "desk"), can_cancel=_can_cancel(req), stay_types=STAY_TYPES)
+        is_desk=can(g.user, CODE, "desk"), can_cancel=_can_cancel(req), stay_types=STAY_TYPES,
+        expenses_by=get_expenses_by())
+
+
+@bp.post("/requests/<int:req_id>/update-expenses")
+@P("desk")
+def update_expenses(req_id):
+    req = _get(req_id)
+    val = request.form.get("expenses_by")
+    valid_expenses = set(get_expenses_by())
+    if val in valid_expenses:
+        req.expenses_by = val
+        req.cost_centre = request.form.get("cost_centre", "").strip()
+        db.session.commit()
+        log_activity(CODE, req.id, g.user, f"Updated expense bearer to {req.expenses_by}")
+        flash("Expenses borne by updated.", "success")
+    else:
+        flash("Invalid expense bearer.", "error")
+    return redirect(url_for("guest_house.request_view", req_id=req.id))
 
 
 @bp.get("/requests/<int:req_id>/print")
@@ -412,7 +474,7 @@ def _render_arrange(req):
     vehicles = Vehicle.query.filter_by(is_active=True).order_by(Vehicle.reg_no).all()
     return render_template("guest_house/arrange.html", req=req, rooms=rooms, busy=busy, vehicles=vehicles,
                            hotels=Hotel.query.filter_by(is_active=True).order_by(Hotel.name).all(),
-                           stay_types=STAY_TYPES, trip_types=TRIP_TYPES)
+                           stay_types=STAY_TYPES, trip_types=TRIP_TYPES, expenses_by=get_expenses_by())
 
 
 def _read_arrangement(req):
@@ -426,6 +488,12 @@ def _read_arrangement_fields(req):
     req.food_arrangement = f.get("food_arrangement", "").strip()
     req.ticket_arrangement = f.get("ticket_arrangement", "").strip()
     req.desk_remarks = f.get("desk_remarks", "").strip()
+    if "expenses_by" in f:
+        valid_expenses = set(get_expenses_by())
+        chosen = f.get("expenses_by")
+        if chosen in valid_expenses:
+            req.expenses_by = chosen
+        req.cost_centre = f.get("cost_centre", "").strip()
 
     for guest in req.guests:
         p = f"g{guest.id}_"
@@ -677,6 +745,12 @@ MASTERS = {
         ("vehicle_type", "Type", ["Sedan", "SUV", "MUV", "Tempo Traveller", "Bus", "Hatchback"], True),
         ("seats", "Seats", "int", True), ("ownership", "Ownership", ["Company", "Leased", "Pool"], True),
         ("driver_name", "Driver", "text", False), ("driver_phone", "Driver phone", "text", False)]),
+    "visit-purposes": (VisitPurpose, "Visit purposes", [
+        ("name", "Purpose / Type", "text", True),
+        ("description", "Description", "text", False)]),
+    "expense-borne-by": (ExpenseBorneBy, "Expenses borne by", [
+        ("name", "Name", "text", True),
+        ("description", "Description", "text", False)]),
 }
 
 
@@ -688,6 +762,16 @@ def masters(kind):
         item = db.session.get(model, request.form.get("id", type=int) or 0) or model()
         if request.form.get("action") == "toggle":
             item.is_active = not item.is_active
+        elif request.form.get("action") == "delete":
+            if item.id:
+                db.session.delete(item)
+                try:
+                    db.session.commit()
+                    flash("Deleted.", "success")
+                except IntegrityError:
+                    db.session.rollback()
+                    flash("Cannot delete this entry because other records depend on it. Deactivate it instead.", "error")
+            return redirect(url_for("guest_house.masters", kind=kind))
         else:
             for name, label, ftype, required in fields:
                 raw = request.form.get(name, "").strip()
@@ -713,3 +797,4 @@ def masters(kind):
     editing = db.session.get(model, request.args.get("edit", type=int) or 0)
     return render_template("guest_house/masters.html", kind=kind, title=title, fields=fields, items=items,
                            editing=editing, masters=MASTERS, guest_houses=GuestHouse.query.order_by(GuestHouse.name).all())
+

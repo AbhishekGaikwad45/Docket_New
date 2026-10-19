@@ -9,7 +9,7 @@
   <tbody>
   {% for r in reqs %}
     <tr>
-      <td><a href="{{ url_for('guest_house.request_view', req_id=r.id) }}"><b>{{ r.req_no }}</b></a><div class="small muted">{{ r.visit_type }}</div></td>
+      <td><a href="{{ url_for('guest_house.request_view', req_id=r.id) }}"><b>{{ r.req_no }}</b></a><div class="small muted">{{ r.visit_type }}{% if r.expenses_by %} · {{ r.expenses_by }}{% endif %}</div></td>
       <td>{{ r.applicant.name }}<div class="small muted">{{ r.department or '' }}</div></td>
       <td>{{ r.guests|length }}<div class="small muted">{{ r.guests|map(attribute='name')|list|join(', ')|truncate(40) }}</div></td>
       <td class="nowrap">{{ dt(r.first_arrival) }}</td><td class="nowrap">{{ dt(r.last_departure) }}</td>
