@@ -2,22 +2,25 @@
 {% block content %}
 {% set C = 'guest_house' %}
 <div class="page-head">
-  <div><div class="crumbs"><a href="{{ url_for('main.home') }}">Home</a> / Guest House</div><h1>{% block heading %}{% endblock %}</h1></div>
+  <div>
+    <div class="crumbs"><a href="{{ url_for('main.home') }}">Home</a> / Guest House</div>
+    <h1>{% block heading %}{% endblock %}</h1>
+  </div>
   <div class="row no-print">{% block actions %}{% endblock %}</div>
 </div>
 <nav class="tabs no-print">
   {% set tabs = [
-    ('dashboard', 'Dashboard', can(current_user, C, 'reports') or can(current_user, C, 'desk')),
-    ('new_request', 'New request', can(current_user, C, 'use')),
-    ('my_requests', 'My requests', can(current_user, C, 'use')),
-    ('approvals_page', 'Approvals', True),
-    ('desk', 'Admin desk', can(current_user, C, 'desk')),
-    ('masters', 'Masters', can(current_user, C, 'masters')),
-    ('reports', 'Reports', can(current_user, C, 'reports')),
+  ('dashboard', 'Dashboard', can(current_user, C, 'reports') or can(current_user, C, 'desk')),
+  ('new_request', 'New request', can(current_user, C, 'use')),
+  ('my_requests', 'My requests', can(current_user, C, 'use')),
+  ('approvals_page', 'Approvals', True),
+  ('desk', 'Admin desk', can(current_user, C, 'desk')),
+  ('masters', 'Masters', can(current_user, C, 'masters')),
+  ('reports', 'Reports', can(current_user, C, 'reports')),
   ] %}
   {% for ep, label, ok in tabs if ok %}
-    <a href="{{ url_for('guest_house.' ~ ep, kind='rooms') if ep == 'masters' else url_for('guest_house.' ~ ep) }}"
-       class="{{ 'on' if request.endpoint == 'guest_house.' ~ ep }}">{{ label }}</a>
+  <a href="{{ url_for('guest_house.' ~ ep, kind='rooms') if ep == 'masters' else url_for('guest_house.' ~ ep) }}"
+    class="{{ 'on' if request.endpoint == 'guest_house.' ~ ep }}">{{ label }}</a>
   {% endfor %}
   {% if can(current_user, C, 'admin') %}<a href="{{ url_for('admin.app_config', code=C) }}">Configuration</a>{% endif %}
 </nav>

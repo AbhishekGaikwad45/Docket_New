@@ -6,7 +6,7 @@
 <section class="card">
   <div class="card-head"><h2>To arrange ({{ to_arrange|length }})</h2><span class="muted small">Approved requests waiting for rooms / hotels / vehicles / tickets</span></div>
   <div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>Request</th><th>Applicant</th><th>Guests</th><th>Arrival</th><th>Needs</th><th>Approved</th><th></th></tr></thead>
+    <thead><tr><th>Request</th><th>Applicant</th><th>Guests</th><th>Arrival</th><th>Expenses</th><th>Needs</th><th>Approved</th><th></th></tr></thead>
     <tbody>{% for r in to_arrange %}
       {% set soon = r.first_arrival and (r.first_arrival - now).total_seconds() < 86400 %}
       <tr>
@@ -14,11 +14,12 @@
         <td>{{ r.applicant.name }}<div class="small muted">{{ r.department or '' }}</div></td>
         <td>{{ r.guests|length }}</td>
         <td class="nowrap">{{ dt(r.first_arrival) }}{% if soon %} <span class="badge b-rejected">within 24h</span>{% endif %}</td>
+        <td class="small nowrap"><b>{{ r.expenses_by }}</b>{% if r.cost_centre %}<div class="muted">{{ r.cost_centre }}</div>{% endif %}</td>
         <td class="small">{% for f, l in [('need_guest_house','GH'),('need_hotel','Hotel'),('need_vehicle','Vehicle'),('need_food','Food'),('need_ticket','Ticket')] if r[f] %}<span class="badge">{{ l }}</span> {% endfor %}</td>
         <td class="small nowrap">{{ dt(r.decided_at) }}</td>
         <td class="right"><a class="btn btn-sm btn-primary" href="{{ url_for('guest_house.arrange', req_id=r.id) }}">Arrange</a></td>
       </tr>
-    {% else %}<tr><td colspan="7" class="empty">Nothing to arrange.</td></tr>{% endfor %}</tbody>
+    {% else %}<tr><td colspan="8" class="empty">Nothing to arrange.</td></tr>{% endfor %}</tbody>
   </table></div>
 </section>
 

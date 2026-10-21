@@ -32,9 +32,13 @@
       <td><span class="badge {{ 'b-approved' if item.is_active else '' }}">{{ 'Active' if item.is_active else ('Maintenance' if kind == 'rooms' else 'Inactive') }}</span></td>
       <td class="right nowrap"><a class="btn btn-sm" href="?edit={{ item.id }}">Edit</a>
         <form method="post" style="display:inline"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="id" value="{{ item.id }}"><input type="hidden" name="action" value="toggle">
-          <button class="btn btn-sm">{{ 'Deactivate' if item.is_active else 'Activate' }}</button></form></td>
+          <button class="btn btn-sm">{{ 'Deactivate' if item.is_active else 'Activate' }}</button></form>
+        <form method="post" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this entry?');">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="id" value="{{ item.id }}"><input type="hidden" name="action" value="delete">
+          <button class="btn btn-sm btn-bad">Delete</button></form>
+      </td>
     </tr>
   {% else %}<tr><td colspan="{{ fields|length + 2 }}" class="empty">Nothing yet.</td></tr>{% endfor %}</tbody>
 </table></div>
-<p class="help">Entries are never deleted (old requests refer to them) - deactivate instead. A deactivated room is shown as under maintenance and can't be allocated.</p>
+<p class="help">Entries linked to past requests or dependencies cannot be deleted — deactivate them instead. A deactivated room is shown as under maintenance and can't be allocated.</p>
 {% endblock %}

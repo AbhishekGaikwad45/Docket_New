@@ -82,6 +82,28 @@ class Vehicle(db.Model):
         return f"{self.reg_no} ({self.model or self.vehicle_type or 'vehicle'})"
 
 
+class VisitPurpose(db.Model):
+    __tablename__ = "gh_visit_purposes"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), unique=True, nullable=False)
+    description = db.Column(db.String(255))
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+
+    def __str__(self):
+        return self.name
+
+
+class ExpenseBorneBy(db.Model):
+    __tablename__ = "gh_expense_borne_by"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), unique=True, nullable=False)
+    description = db.Column(db.String(255))
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+
+    def __str__(self):
+        return self.name
+
+
 class GuestRequest(db.Model):
     __tablename__ = "gh_requests"
     id = db.Column(db.Integer, primary_key=True)
@@ -149,6 +171,40 @@ class GuestRequest(db.Model):
         }
 
     # --- helpers
+    @property
+    def travel_mode(self):
+        if not self.ticket_note:
+            return ""
+        import re
+        m = re.search(r"<!--TRAVEL_MODE:(.*?)-->", self.ticket_note)
+        if m:
+            return m.group(1).strip()
+        m2 = re.match(r"^Mode:\s*([^|\n]+)", self.ticket_note)
+        if m2:
+            return m2.group(1).strip()
+        return ""
+
+    @property
+    def clean_vehicle_note(self):
+        if not self.vehicle_note:
+            return ""
+        import re
+        return re.sub(r"<!--VEHICLE_DATA:.*?-->", "", self.vehicle_note, flags=re.S).strip()
+
+    @property
+    def clean_food_note(self):
+        if not self.food_note:
+            return ""
+        import re
+        return re.sub(r"<!--FOOD_DATA:.*?-->", "", self.food_note, flags=re.S).strip()
+
+    @property
+    def clean_ticket_note(self):
+        if not self.ticket_note:
+            return ""
+        import re
+        return re.sub(r"<!--TRAVEL_MODE:.*?-->", "", self.ticket_note, flags=re.S).strip()
+
     @property
     def status_label(self):
         return STATUSES.get(self.status, self.status)
@@ -250,6 +306,7 @@ class Trip(db.Model):
         if self.source == "company" and self.vehicle:
             return str(self.vehicle)
         return f"Hired: {self.hired_vehicle_no or '-'} {self.hired_vehicle_type or ''} ({self.vendor or 'vendor n/a'})".strip()
+
 
 
 def _overlaps(a, b):

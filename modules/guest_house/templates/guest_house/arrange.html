@@ -68,7 +68,7 @@
 
   <section class="card" data-repeater>
     <div class="card-head"><h2>Vehicle trips</h2><button type="button" class="btn btn-sm btn-primary" data-add>+ Add trip</button></div>
-    <p class="help" style="margin-top:-6px">Asked: {{ yn(req.need_vehicle) }}{% if req.vehicle_note %} - “{{ req.vehicle_note }}”{% endif %}. If no company vehicle is free for the slot, switch the trip to <b>Hired</b> and enter the vendor details.</p>
+    <p class="help" style="margin-top:-6px;white-space:pre-line">Asked: {{ yn(req.need_vehicle) }}{% if req.clean_vehicle_note %} - “{{ req.clean_vehicle_note }}”{% endif %}. If no company vehicle is free for the slot, switch the trip to <b>Hired</b> and enter the vendor details.</p>
     <div class="tbl-wrap"><table class="tbl compact">
       <thead><tr><th>#</th><th>Trip</th><th>Start / end</th><th>Vehicle</th><th>Driver</th><th>Cost / remarks</th><th></th></tr></thead>
       <tbody data-rows>{% for t in req.trips %}{{ trip_row(t) }}{% endfor %}</tbody>
@@ -76,12 +76,30 @@
     <template>{{ trip_row({}) }}</template>
   </section>
 
+  <section class="card">
+    <h2>Billing &amp; Expenses</h2>
+    <div class="grid g2" style="margin-top:8px">
+      <div class="field">
+        <label class="req" for="expenses_by">Expenses borne by</label>
+        <select id="expenses_by" name="expenses_by" data-switch="form">
+          {% for v in expenses_by %}
+            <option value="{{ v }}" {{ 'selected' if req.expenses_by == v }}>{{ v }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field" data-when="Department (cost centre)">
+        <label for="cost_centre">Cost centre</label>
+        <input type="text" id="cost_centre" name="cost_centre" value="{{ req.cost_centre or '' }}" placeholder="Cost centre code">
+      </div>
+    </div>
+  </section>
+
   <section class="card grid g2">
     <div class="field"><label for="food_arrangement">Food arrangement</label>
-      <div class="help" style="margin:-2px 0 4px">Asked: {{ yn(req.need_food) }}{% if req.food_note %} - “{{ req.food_note }}”{% endif %}</div>
+      <div class="help" style="margin:-2px 0 4px;white-space:pre-line">Asked: {{ yn(req.need_food) }}{% if req.clean_food_note %} - “{{ req.clean_food_note }}”{% endif %}</div>
       <textarea id="food_arrangement" name="food_arrangement" rows="3">{{ req.food_arrangement or '' }}</textarea></div>
     <div class="field"><label for="ticket_arrangement">Ticket arrangement</label>
-      <div class="help" style="margin:-2px 0 4px">Asked: {{ yn(req.need_ticket) }}{% if req.ticket_note %} - “{{ req.ticket_note }}”{% endif %}</div>
+      <div class="help" style="margin:-2px 0 4px;white-space:pre-line">Asked: {{ yn(req.need_ticket) }}{% if req.clean_ticket_note %} - “{{ req.clean_ticket_note }}”{% endif %}</div>
       <textarea id="ticket_arrangement" name="ticket_arrangement" rows="3" placeholder="PNR / flight no., timings, fare…">{{ req.ticket_arrangement or '' }}</textarea></div>
     <div class="field span2"><label for="desk_remarks">Desk remarks</label><textarea id="desk_remarks" name="desk_remarks" rows="2">{{ req.desk_remarks or '' }}</textarea></div>
   </section>
