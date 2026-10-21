@@ -11,6 +11,8 @@ def create_app(overrides=None):
     app = Flask(__name__, template_folder="core/templates", static_folder="core/static")
     app.config.from_object(Config)
     app.config.update(overrides or {})
+    app.jinja_env.auto_reload = True
+    app.config["TEMPLATES_AUTO_RELOAD"] = True
     Path(app.instance_path).mkdir(exist_ok=True)
 
     db.init_app(app)
