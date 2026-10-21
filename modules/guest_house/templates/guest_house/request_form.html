@@ -23,8 +23,11 @@
       <input type="radio" id="{{ field }}1" name="{{ field }}" value="1" {{ 'checked' if req[field] }}><label for="{{ field }}1">Yes</label>
       <input type="radio" id="{{ field }}0" name="{{ field }}" value="0" {{ 'checked' if not req[field] }}><label for="{{ field }}0">No</label>
     </div>
-    <div>{% if note %}<div data-if-yes><textarea name="{{ note }}" rows="2" placeholder="{{ note_label }}" aria-label="{{ note_label }}">{{ req[note] or '' }}</textarea>
-      {% if note_help %}<div class="help">{{ note_help }}</div>{% endif %}</div>{% endif %}</div>
+    <div>
+      <span class="req-date-notice"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>Please enter the date</span>
+      {% if note %}<div data-if-yes><textarea name="{{ note }}" rows="2" placeholder="{{ note_label }}" aria-label="{{ note_label }}">{{ req[note] or '' }}</textarea>
+      {% if note_help %}<div class="help">{{ note_help }}</div>{% endif %}</div>{% endif %}
+    </div>
   </div>
 {% endmacro %}
 {% block page %}
@@ -33,20 +36,282 @@
 .arr-need-top { display: flex; align-items: center; gap: 20px; }
 .arr-need-top .q { width: 200px; font-weight: 500; }
 .arr-body { margin-top: 10px; width: 100%; }
-.arr-card { margin-top: 8px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; padding: 10px; background: #fafbfc; }
-.arr-card-title { font-weight: 600; font-size: 13px; margin-bottom: 8px; color: #1e40af; }
-.arr-card-title.food { color: #047857; }
-.arr-table { border-collapse: collapse; width: 100%; font-size: 12px; background: #ffffff; }
-.arr-table th, .arr-table td { border: 1px solid #cbd5e1; padding: 5px 8px; vertical-align: middle; }
-.arr-table th { background: #f1f5f9; font-weight: 600; text-align: center; white-space: nowrap; font-size: 12px; }
-.arr-table td.row-hdr { font-weight: 600; background: #f8fafc; white-space: nowrap; width: 110px; text-align: left; }
-.arr-table input[type="text"] { font-size: 11px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 3px; min-width: 85px; width: 100%; box-sizing: border-box; background: #fff; }
-.yn-sm { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; vertical-align: middle; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-.yn-sm input { display: none !important; }
-.yn-sm label { padding: 3px 8px; cursor: pointer; font-size: 11px; font-weight: 600; background: #f8fafc; color: #64748b; line-height: 1.2; transition: all .15s ease; user-select: none; border: none; margin: 0; }
-.yn-sm label:first-of-type { border-right: 1px solid #cbd5e1; }
-.yn-sm input[value="1"]:checked + label { background: #0284c7; color: #ffffff; }
-.yn-sm input[value="0"]:checked + label { background: #e2e8f0; color: #475569; }
+.arr-card {
+  margin-top: 14px;
+  margin-bottom: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px 16px 16px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+.arr-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.arr-card-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: -0.01em;
+}
+.arr-card-title.food {
+  color: #047857;
+}
+.btn-all-fullday {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-all-fullday:hover {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2);
+}
+.btn-all-fullday.food {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+.btn-all-fullday.food:hover {
+  background: #059669;
+  color: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
+}
+.btn-copy-schedule {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 11px;
+  border-radius: 20px;
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.btn-copy-schedule:hover {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2);
+}
+.btn-copy-schedule.food:hover {
+  background: #059669;
+  color: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
+}
+.btn-copy-schedule.copied {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+}
+
+.arr-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-size: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.arr-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px 6px;
+  color: #334155;
+  border-bottom: 2px solid #e2e8f0;
+  border-right: 1px solid #f1f5f9;
+}
+.arr-table th:last-child {
+  border-right: none;
+}
+.day-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+}
+.day-date {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  margin-top: 2px;
+}
+.arr-table td {
+  border-bottom: 1px solid #f1f5f9;
+  border-right: 1px solid #f8fafc;
+  padding: 8px 8px;
+  vertical-align: top;
+  text-align: center;
+  transition: background-color 0.12s ease;
+}
+.arr-table td:last-child {
+  border-right: none;
+}
+.arr-table tr:last-child td {
+  border-bottom: none;
+}
+.arr-table tr:hover td {
+  background-color: #fafbfc;
+}
+.arr-table td.row-hdr {
+  font-weight: 600;
+  background: #f8fafc;
+  white-space: nowrap;
+  width: 110px;
+  text-align: left;
+  vertical-align: middle;
+  padding: 10px 12px;
+  color: #334155;
+  border-right: 2px solid #e2e8f0;
+  font-size: 12px;
+}
+.arr-table tr.row-fullday td {
+  background: #f0fdf4;
+}
+.arr-table tr.row-fullday-vehicle td {
+  background: #f0f9ff;
+}
+.arr-table tr.row-fullday:hover td {
+  background: #e6fced;
+}
+.arr-table tr.row-fullday-vehicle:hover td {
+  background: #e0f2fe;
+}
+
+/* Modern Segmented Switch */
+.yn-sm {
+  display: inline-flex;
+  background: #e2e8f0;
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid #cbd5e1;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  gap: 2px;
+  vertical-align: middle;
+}
+.yn-sm input {
+  display: none !important;
+}
+.yn-sm label {
+  padding: 3px 10px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  user-select: none;
+  margin: 0;
+  border: none;
+  line-height: 1.3;
+}
+.yn-sm label:hover {
+  color: #1e293b;
+}
+.yn-sm input[value="1"]:checked + label {
+  background: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.35);
+}
+.food-card .yn-sm input[value="1"]:checked + label {
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(5, 150, 105, 0.35);
+}
+.yn-sm input[value="0"]:checked + label {
+  background: #ffffff;
+  color: #475569;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Modern Location Input on Next Line */
+.arr-loc-wrap {
+  margin-top: 6px;
+  width: 100%;
+}
+.arr-loc-input {
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #1e293b;
+  display: block;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.arr-loc-input::placeholder {
+  color: #94a3b8;
+  font-size: 10.5px;
+}
+.arr-loc-input:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+  outline: none;
+}
+.food-card .arr-loc-input:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
+  outline: none;
+}
+
+/* Disabled requirements until arrival and departure dates are entered */
+.req-date-notice {
+  display: none;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 4px;
+  padding: 3px 8px;
+  line-height: 1.2;
+}
+.need.is-disabled .req-date-notice {
+  display: inline-flex;
+}
+.need.is-disabled .yn {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(80%);
+}
+.need.is-disabled .yn label {
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+.need.is-disabled .q {
+  color: #64748b;
+}
 </style>
 {% if copy_of %}<div class="flash flash-info">Copied from {{ copy_of.req_no }} - set the new dates for each guest.</div>{% endif %}
 <form method="post" class="stack" novalidate>
@@ -77,11 +342,22 @@
     <p class="help">Up to {{ max_guests }} guests. Each guest can have different dates.</p>
   </section>
 
-  <section class="card">
+  <section class="card" id="requirements_section">
     <h2>Requirements</h2>
     <p class="help" style="margin-top:-6px">Just say what is needed - the administration desk allocates the room, hotel, vehicle and tickets after approval.</p>
+
+    <div id="req_date_warning" class="flash flash-warning" style="display:none;align-items:center;gap:8px;margin-bottom:12px;padding:8px 12px;font-size:13px;border-radius:6px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <span><strong>Please enter the date:</strong> Arrival and departure time must be entered before selecting requirements.</span>
+    </div>
+
     {{ need('need_guest_house', 'Guest house required?') }}
     {{ need('need_hotel', 'Hotel stay required?') }}
+
+    <div id="gh_hotel_split_notice" class="flash flash-warning" style="display:none;align-items:center;gap:8px;margin:8px 0 14px 0;padding:8px 12px;font-size:12.5px;border-radius:6px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <span><strong>Both Guest House &amp; Hotel are selected:</strong> Please explain below in <em>'Anything else'</em> why both are needed (e.g. which guests or dates stay in guest house vs hotel), or select only one accommodation type.</span>
+    </div>
 
     <!-- Vehicle Required -->
     <div class="need arr-need-block" id="vehicle_need_block">
@@ -91,6 +367,7 @@
           <input type="radio" id="need_vehicle1" name="need_vehicle" value="1" {{ 'checked' if req.need_vehicle }}><label for="need_vehicle1">Yes</label>
           <input type="radio" id="need_vehicle0" name="need_vehicle" value="0" {{ 'checked' if not req.need_vehicle }}><label for="need_vehicle0">No</label>
         </div>
+        <span class="req-date-notice"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>Please enter the date</span>
       </div>
       <div id="vehicle_arr_wrap" class="arr-body" style="display: {{ 'block' if req.need_vehicle else 'none' }};">
         <div id="vehicle_dynamic_container"></div>
@@ -106,6 +383,7 @@
           <input type="radio" id="need_food1" name="need_food" value="1" {{ 'checked' if req.need_food }}><label for="need_food1">Yes</label>
           <input type="radio" id="need_food0" name="need_food" value="0" {{ 'checked' if not req.need_food }}><label for="need_food0">No</label>
         </div>
+        <span class="req-date-notice"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>Please enter the date</span>
       </div>
       <div id="food_arr_wrap" class="arr-body" style="display: {{ 'block' if req.need_food else 'none' }};">
         <div id="food_dynamic_container"></div>
@@ -121,6 +399,7 @@
           <input type="radio" id="need_ticket1" name="need_ticket" value="1" {{ 'checked' if req.need_ticket }}><label for="need_ticket1">Yes</label>
           <input type="radio" id="need_ticket0" name="need_ticket" value="0" {{ 'checked' if not req.need_ticket }}><label for="need_ticket0">No</label>
         </div>
+        <span class="req-date-notice"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>Please enter the date</span>
       </div>
       <div id="ticket_arr_wrap" class="arr-body" style="display: {{ 'block' if req.need_ticket else 'none' }};">
         <div class="arr-card" style="max-width:680px">
@@ -142,8 +421,10 @@
       </div>
     </div>
 
-    <div class="field" style="margin-top:12px"><label for="other_note">Anything else</label>
-      <textarea id="other_note" name="other_note" rows="2" placeholder="Special requests, accessibility needs, split between guest house and hotel…">{{ req.other_note or '' }}</textarea></div>
+    <div class="field" style="margin-top:12px">
+      <label for="other_note">Anything else <span id="other_note_split_badge" style="display:none;font-size:11px;font-weight:600;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:2px 7px;margin-left:6px">⚠️ Required: Explain Guest House &amp; Hotel split</span></label>
+      <textarea id="other_note" name="other_note" rows="2" placeholder="Special requests, accessibility needs, split between guest house and hotel…">{{ req.other_note or '' }}</textarea>
+    </div>
   </section>
 
   <section class="card">
@@ -280,6 +561,136 @@ function getGuestsData() {
   });
 }
 
+function hasValidDates() {
+  const firstRow = document.querySelector("[data-rows] [data-row]");
+  if (!firstRow) return false;
+  const arr = firstRow.querySelector("[name=g_arrival]")?.value?.trim();
+  const dep = firstRow.querySelector("[name=g_departure]")?.value?.trim();
+  if (!arr || !dep) return false;
+  const dArr = new Date(arr);
+  const dDep = new Date(dep);
+  if (isNaN(dArr.getTime()) || isNaN(dDep.getTime()) || dDep <= dArr) return false;
+  return true;
+}
+
+function updateRequirementsState() {
+  const valid = hasValidDates();
+  const reqSection = document.getElementById("requirements_section");
+  if (!reqSection) return;
+
+  const warningBanner = document.getElementById("req_date_warning");
+  if (warningBanner) {
+    warningBanner.style.display = valid ? "none" : "flex";
+  }
+
+  const needBlocks = reqSection.querySelectorAll(".need");
+  needBlocks.forEach(block => {
+    const yn = block.querySelector(".yn");
+    const radios = block.querySelectorAll("input[type=radio]");
+    if (!valid) {
+      block.classList.add("is-disabled");
+      if (yn) yn.setAttribute("title", "Please enter the arrival and departure date");
+      radios.forEach(r => {
+        r.disabled = true;
+      });
+      const yesRadio = block.querySelector("input[value='1']");
+      const noRadio = block.querySelector("input[value='0']");
+      if (yesRadio && yesRadio.checked) {
+        yesRadio.checked = false;
+        if (noRadio) noRadio.checked = true;
+      }
+    } else {
+      block.classList.remove("is-disabled");
+      if (yn) yn.removeAttribute("title");
+      radios.forEach(r => {
+        r.disabled = false;
+      });
+    }
+  });
+
+  if (!valid) {
+    const vWrap = document.getElementById("vehicle_arr_wrap");
+    if (vWrap) vWrap.style.display = "none";
+    const fWrap = document.getElementById("food_arr_wrap");
+    if (fWrap) fWrap.style.display = "none";
+    const tWrap = document.getElementById("ticket_arr_wrap");
+    if (tWrap) tWrap.style.display = "none";
+    reqSection.querySelectorAll("[data-if-yes]").forEach(el => el.hidden = true);
+  } else {
+    updateArrangementsVisibility();
+    reqSection.querySelectorAll("[data-need]").forEach(block => {
+      const yes = block.querySelector("input[value='1']")?.checked;
+      block.querySelectorAll("[data-if-yes]").forEach(el => el.hidden = !yes);
+    });
+  }
+  updateAccommodationSplitNotice();
+}
+
+function updateAccommodationSplitNotice() {
+  const ghYes = document.querySelector("input[name='need_guest_house'][value='1']")?.checked;
+  const hotelYes = document.querySelector("input[name='need_hotel'][value='1']")?.checked;
+  const notice = document.getElementById("gh_hotel_split_notice");
+  const labelBadge = document.getElementById("other_note_split_badge");
+  const otherNote = document.getElementById("other_note");
+  const isBoth = !!(ghYes && hotelYes);
+
+  if (notice) notice.style.display = isBoth ? "flex" : "none";
+  if (labelBadge) labelBadge.style.display = isBoth ? "inline-flex" : "none";
+  if (otherNote) {
+    if (isBoth) {
+      otherNote.placeholder = "Required: Both Guest House and Hotel are selected. Please explain which guests or dates stay in the guest house vs hotel...";
+    } else {
+      otherNote.placeholder = "Special requests, accessibility needs, split between guest house and hotel…";
+      otherNote.style.borderColor = "";
+      otherNote.style.boxShadow = "";
+    }
+  }
+}
+
+function setDayFullDay(gidx, dkey, isYes) {
+  const k = `${gidx}_${dkey}`;
+  vehicleState[k] = vehicleState[k] || {};
+  foodState[k] = foodState[k] || {};
+
+  vehicleState[k].fd = isYes;
+  foodState[k].fd = isYes;
+
+  if (isYes) {
+    // Automatically set vehicle Pickup and Drop to Yes
+    vehicleState[k].p = true;
+    vehicleState[k].d = true;
+
+    // Automatically set food Morning, Evening, Night to Yes
+    foodState[k].m = true;
+    foodState[k].e = true;
+    foodState[k].n = true;
+
+    // Automatically set Vehicle and Food requirements to Yes
+    const vYesRadio = document.getElementById("need_vehicle1");
+    if (vYesRadio && !vYesRadio.checked) {
+      vYesRadio.checked = true;
+      const vNo = document.getElementById("need_vehicle0");
+      if (vNo) vNo.checked = false;
+    }
+    const fYesRadio = document.getElementById("need_food1");
+    if (fYesRadio && !fYesRadio.checked) {
+      fYesRadio.checked = true;
+      const fNo = document.getElementById("need_food0");
+      if (fNo) fNo.checked = false;
+    }
+    updateArrangementsVisibility();
+  } else {
+    vehicleState[k].p = false;
+    vehicleState[k].d = false;
+
+    foodState[k].m = false;
+    foodState[k].e = false;
+    foodState[k].n = false;
+  }
+
+  renderDailyArrangements();
+}
+
 function renderDailyArrangements() {
   const vContainer = document.getElementById("vehicle_dynamic_container");
   const fContainer = document.getElementById("food_dynamic_container");
@@ -287,71 +698,91 @@ function renderDailyArrangements() {
 
   const guests = getGuestsData();
 
-  // 1. Render Vehicle Arrangement Table (Pickup & Drop checkboxes + pickup locations for each day)
+  // 1. Render Vehicle Arrangement Table
   if (vContainer) {
     let html = "";
     guests.forEach(g => {
       html += `
         <div class="arr-card">
-          <div class="arr-card-title">Guest ${g.idx + 1}: ${escapeHtml(g.name)}</div>
+          <div class="arr-card-head">
+            <div class="arr-card-title"><span style="font-size:15px">🚗</span> Guest ${g.idx + 1}: ${escapeHtml(g.name)}</div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              ${g.idx === 0 && guests.length > 1 ? `
+                <button type="button" class="btn-copy-schedule" data-copy-vehicle-all title="Copy Guest 1 vehicle schedule & locations to all next guests">📋 Copy to next guest${guests.length > 2 ? 's' : ''}</button>
+              ` : ''}
+              ${g.idx > 0 ? `
+                <button type="button" class="btn-copy-schedule" data-copy-vehicle-from="${g.idx}" title="Copy vehicle schedule & locations from Guest 1">📋 Copy from Guest 1</button>
+              ` : ''}
+              <button type="button" class="btn-all-fullday" data-all-fullday="${g.idx}" title="Set all days to Full Day (Vehicle + Food)">⚡ All days Full Day</button>
+            </div>
+          </div>
           <div class="tbl-wrap" style="overflow-x:auto">
             <table class="arr-table">
               <thead>
                 <tr>
-                  <th style="min-width:100px;text-align:left">Guest ${g.idx + 1}</th>
-                  ${g.days.map(d => {
-                    const k = `${g.idx}_${d.key}`;
-                    const st = vehicleState[k] || {};
-                    const showLoc = !!(st.p || st.d);
-                    return `
-                      <th style="min-width:85px;text-align:center">
-                        ${d.label}
-                        ${d.subLabel ? `<div class="small muted" style="font-weight:normal;font-size:11px">${d.subLabel}</div>` : ''}
-                      </th>
-                      <th data-v-loc-col="${k}" style="${showLoc ? '' : 'display:none;'}min-width:110px;text-align:center">Location</th>
-                    `;
-                  }).join('')}
+                  <th style="min-width:110px;text-align:left;padding-left:12px">Guest ${g.idx + 1}</th>
+                  ${g.days.map(d => `
+                    <th style="min-width:115px;text-align:center">
+                      <div class="day-num">${d.label}</div>
+                      ${d.subLabel ? `<div class="day-date">${d.subLabel}</div>` : ''}
+                    </th>
+                  `).join('')}
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td class="row-hdr">Pickup</td>
+                <tr class="row-fullday-vehicle">
+                  <td class="row-hdr" style="font-weight:700;color:#0284c7">☀️ Full day</td>
                   ${g.days.map(d => {
                     const k = `${g.idx}_${d.key}`;
                     const st = vehicleState[k] || {};
-                    const showLoc = !!(st.p || st.d);
                     return `
-                      <td style="text-align:center">
+                      <td style="text-align:center;vertical-align:middle;padding:8px 6px">
+                        <div class="yn yn-sm" role="radiogroup" aria-label="Full day vehicle">
+                          <input type="radio" id="vfd_${g.idx}_${d.key}_1" name="vfd_${g.idx}_${d.key}" value="1" data-v-fullday data-gidx="${g.idx}" data-dkey="${d.key}" ${st.fd ? 'checked' : ''}>
+                          <label for="vfd_${g.idx}_${d.key}_1">Yes</label>
+                          <input type="radio" id="vfd_${g.idx}_${d.key}_0" name="vfd_${g.idx}_${d.key}" value="0" data-v-fullday-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.fd ? 'checked' : ''}>
+                          <label for="vfd_${g.idx}_${d.key}_0">No</label>
+                        </div>
+                      </td>
+                    `;
+                  }).join('')}
+                </tr>
+                <tr>
+                  <td class="row-hdr">🚗 Pickup</td>
+                  ${g.days.map(d => {
+                    const k = `${g.idx}_${d.key}`;
+                    const st = vehicleState[k] || {};
+                    return `
+                      <td style="text-align:center;vertical-align:top;padding:8px 6px">
                         <div class="yn yn-sm" role="radiogroup" aria-label="Pickup">
                           <input type="radio" id="vp_${g.idx}_${d.key}_1" name="vp_${g.idx}_${d.key}" value="1" data-v-pickup data-gidx="${g.idx}" data-dkey="${d.key}" ${st.p ? 'checked' : ''}>
                           <label for="vp_${g.idx}_${d.key}_1">Yes</label>
                           <input type="radio" id="vp_${g.idx}_${d.key}_0" name="vp_${g.idx}_${d.key}" value="0" data-v-pickup-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.p ? 'checked' : ''}>
                           <label for="vp_${g.idx}_${d.key}_0">No</label>
                         </div>
-                      </td>
-                      <td data-v-loc-col="${k}" style="${showLoc ? '' : 'display:none'}">
-                        <input type="text" data-v-pickup-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="Location" value="${escapeHtml(st.pl || '')}" style="display:${st.p ? 'block' : 'none'}">
+                        <div class="arr-loc-wrap" style="display:${st.p ? 'block' : 'none'}">
+                          <input type="text" data-v-pickup-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="📍 Pickup point" value="${escapeHtml(st.pl || '')}" class="arr-loc-input">
+                        </div>
                       </td>
                     `;
                   }).join('')}
                 </tr>
                 <tr>
-                  <td class="row-hdr">Drop</td>
+                  <td class="row-hdr">📍 Drop</td>
                   ${g.days.map(d => {
                     const k = `${g.idx}_${d.key}`;
                     const st = vehicleState[k] || {};
-                    const showLoc = !!(st.p || st.d);
                     return `
-                      <td style="text-align:center">
+                      <td style="text-align:center;vertical-align:top;padding:8px 6px">
                         <div class="yn yn-sm" role="radiogroup" aria-label="Drop">
                           <input type="radio" id="vd_${g.idx}_${d.key}_1" name="vd_${g.idx}_${d.key}" value="1" data-v-drop data-gidx="${g.idx}" data-dkey="${d.key}" ${st.d ? 'checked' : ''}>
                           <label for="vd_${g.idx}_${d.key}_1">Yes</label>
                           <input type="radio" id="vd_${g.idx}_${d.key}_0" name="vd_${g.idx}_${d.key}" value="0" data-v-drop-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.d ? 'checked' : ''}>
                           <label for="vd_${g.idx}_${d.key}_0">No</label>
                         </div>
-                      </td>
-                      <td data-v-loc-col="${k}" style="${showLoc ? '' : 'display:none'}">
-                        <input type="text" data-v-drop-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="Location" value="${escapeHtml(st.dl || '')}" style="display:${st.d ? 'block' : 'none'}">
+                        <div class="arr-loc-wrap" style="display:${st.d ? 'block' : 'none'}">
+                          <input type="text" data-v-drop-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="📍 Drop destination" value="${escapeHtml(st.dl || '')}" class="arr-loc-input">
+                        </div>
                       </td>
                     `;
                   }).join('')}
@@ -365,92 +796,111 @@ function renderDailyArrangements() {
     vContainer.innerHTML = html;
   }
 
-  // 2. Render Food Arrangement Table (Morning, Evening, Night Yes/No toggles + Location for each day)
+  // 2. Render Food Arrangement Table
   if (fContainer) {
     let html = "";
     guests.forEach(g => {
       html += `
-        <div class="arr-card">
-          <div class="arr-card-title food">Guest ${g.idx + 1}: ${escapeHtml(g.name)}</div>
+        <div class="arr-card food-card">
+          <div class="arr-card-head">
+            <div class="arr-card-title food"><span style="font-size:15px">🍽️</span> Guest ${g.idx + 1}: ${escapeHtml(g.name)}</div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              ${g.idx === 0 && guests.length > 1 ? `
+                <button type="button" class="btn-copy-schedule food" data-copy-food-all title="Copy Guest 1 food schedule & locations to all next guests">📋 Copy to next guest${guests.length > 2 ? 's' : ''}</button>
+              ` : ''}
+              ${g.idx > 0 ? `
+                <button type="button" class="btn-copy-schedule food" data-copy-food-from="${g.idx}" title="Copy food schedule & locations from Guest 1">📋 Copy from Guest 1</button>
+              ` : ''}
+              <button type="button" class="btn-all-fullday food" data-all-fullday="${g.idx}" title="Set all days to Full Day (Vehicle + Food)">⚡ All days Full Day</button>
+            </div>
+          </div>
           <div class="tbl-wrap" style="overflow-x:auto">
             <table class="arr-table">
               <thead>
                 <tr>
-                  <th style="min-width:100px;text-align:left">Guest ${g.idx + 1}</th>
-                  ${g.days.map(d => {
-                    const k = `${g.idx}_${d.key}`;
-                    const st = foodState[k] || {};
-                    const showLoc = !!(st.m || st.e || st.n);
-                    return `
-                      <th style="min-width:85px;text-align:center">
-                        ${d.label}
-                        ${d.subLabel ? `<div class="small muted" style="font-weight:normal;font-size:11px">${d.subLabel}</div>` : ''}
-                      </th>
-                      <th data-f-loc-col="${k}" style="${showLoc ? '' : 'display:none;'}min-width:110px;text-align:center">Location</th>
-                    `;
-                  }).join('')}
+                  <th style="min-width:110px;text-align:left;padding-left:12px">Guest ${g.idx + 1}</th>
+                  ${g.days.map(d => `
+                    <th style="min-width:115px;text-align:center">
+                      <div class="day-num">${d.label}</div>
+                      ${d.subLabel ? `<div class="day-date">${d.subLabel}</div>` : ''}
+                    </th>
+                  `).join('')}
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td class="row-hdr">Morning</td>
+                <tr class="row-fullday">
+                  <td class="row-hdr" style="font-weight:700;color:#047857">🍽️ Full day</td>
                   ${g.days.map(d => {
                     const k = `${g.idx}_${d.key}`;
                     const st = foodState[k] || {};
-                    const showLoc = !!(st.m || st.e || st.n);
                     return `
-                      <td style="text-align:center">
+                      <td style="text-align:center;vertical-align:middle;padding:8px 6px">
+                        <div class="yn yn-sm" role="radiogroup" aria-label="Full day food">
+                          <input type="radio" id="ffd_${g.idx}_${d.key}_1" name="ffd_${g.idx}_${d.key}" value="1" data-f-fullday data-gidx="${g.idx}" data-dkey="${d.key}" ${st.fd ? 'checked' : ''}>
+                          <label for="ffd_${g.idx}_${d.key}_1">Yes</label>
+                          <input type="radio" id="ffd_${g.idx}_${d.key}_0" name="ffd_${g.idx}_${d.key}" value="0" data-f-fullday-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.fd ? 'checked' : ''}>
+                          <label for="ffd_${g.idx}_${d.key}_0">No</label>
+                        </div>
+                      </td>
+                    `;
+                  }).join('')}
+                </tr>
+                <tr>
+                  <td class="row-hdr">☕ Morning</td>
+                  ${g.days.map(d => {
+                    const k = `${g.idx}_${d.key}`;
+                    const st = foodState[k] || {};
+                    return `
+                      <td style="text-align:center;vertical-align:top;padding:8px 6px">
                         <div class="yn yn-sm" role="radiogroup" aria-label="Morning">
                           <input type="radio" id="fm_${g.idx}_${d.key}_1" name="fm_${g.idx}_${d.key}" value="1" data-f-morning data-gidx="${g.idx}" data-dkey="${d.key}" ${st.m ? 'checked' : ''}>
                           <label for="fm_${g.idx}_${d.key}_1">Yes</label>
                           <input type="radio" id="fm_${g.idx}_${d.key}_0" name="fm_${g.idx}_${d.key}" value="0" data-f-morning-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.m ? 'checked' : ''}>
                           <label for="fm_${g.idx}_${d.key}_0">No</label>
                         </div>
-                      </td>
-                      <td data-f-loc-col="${k}" style="${showLoc ? '' : 'display:none'}">
-                        <input type="text" data-f-morning-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="Location" value="${escapeHtml(st.ml || '')}" style="display:${st.m ? 'block' : 'none'}">
+                        <div class="arr-loc-wrap" style="display:${st.m ? 'block' : 'none'}">
+                          <input type="text" data-f-morning-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="📍 Breakfast location" value="${escapeHtml(st.ml || '')}" class="arr-loc-input">
+                        </div>
                       </td>
                     `;
                   }).join('')}
                 </tr>
                 <tr>
-                  <td class="row-hdr">Evening</td>
+                  <td class="row-hdr">🍲 Evening</td>
                   ${g.days.map(d => {
                     const k = `${g.idx}_${d.key}`;
                     const st = foodState[k] || {};
-                    const showLoc = !!(st.m || st.e || st.n);
                     return `
-                      <td style="text-align:center">
+                      <td style="text-align:center;vertical-align:top;padding:8px 6px">
                         <div class="yn yn-sm" role="radiogroup" aria-label="Evening">
                           <input type="radio" id="fe_${g.idx}_${d.key}_1" name="fe_${g.idx}_${d.key}" value="1" data-f-evening data-gidx="${g.idx}" data-dkey="${d.key}" ${st.e ? 'checked' : ''}>
                           <label for="fe_${g.idx}_${d.key}_1">Yes</label>
                           <input type="radio" id="fe_${g.idx}_${d.key}_0" name="fe_${g.idx}_${d.key}" value="0" data-f-evening-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.e ? 'checked' : ''}>
                           <label for="fe_${g.idx}_${d.key}_0">No</label>
                         </div>
-                      </td>
-                      <td data-f-loc-col="${k}" style="${showLoc ? '' : 'display:none'}">
-                        <input type="text" data-f-evening-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="Location" value="${escapeHtml(st.el || '')}" style="display:${st.e ? 'block' : 'none'}">
+                        <div class="arr-loc-wrap" style="display:${st.e ? 'block' : 'none'}">
+                          <input type="text" data-f-evening-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="📍 Lunch / Evening" value="${escapeHtml(st.el || '')}" class="arr-loc-input">
+                        </div>
                       </td>
                     `;
                   }).join('')}
                 </tr>
                 <tr>
-                  <td class="row-hdr">Night</td>
+                  <td class="row-hdr">🌙 Night</td>
                   ${g.days.map(d => {
                     const k = `${g.idx}_${d.key}`;
                     const st = foodState[k] || {};
-                    const showLoc = !!(st.m || st.e || st.n);
                     return `
-                      <td style="text-align:center">
+                      <td style="text-align:center;vertical-align:top;padding:8px 6px">
                         <div class="yn yn-sm" role="radiogroup" aria-label="Night">
                           <input type="radio" id="fn_${g.idx}_${d.key}_1" name="fn_${g.idx}_${d.key}" value="1" data-f-night data-gidx="${g.idx}" data-dkey="${d.key}" ${st.n ? 'checked' : ''}>
                           <label for="fn_${g.idx}_${d.key}_1">Yes</label>
                           <input type="radio" id="fn_${g.idx}_${d.key}_0" name="fn_${g.idx}_${d.key}" value="0" data-f-night-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.n ? 'checked' : ''}>
                           <label for="fn_${g.idx}_${d.key}_0">No</label>
                         </div>
-                      </td>
-                      <td data-f-loc-col="${k}" style="${showLoc ? '' : 'display:none'}">
-                        <input type="text" data-f-night-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="Location" value="${escapeHtml(st.nl || '')}" style="display:${st.n ? 'block' : 'none'}">
+                        <div class="arr-loc-wrap" style="display:${st.n ? 'block' : 'none'}">
+                          <input type="text" data-f-night-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="📍 Dinner location" value="${escapeHtml(st.nl || '')}" class="arr-loc-input">
+                        </div>
                       </td>
                     `;
                   }).join('')}
@@ -481,131 +931,128 @@ function updateArrangementsVisibility() {
 
 // Track vehicle and food input/toggle changes
 document.addEventListener("change", (e) => {
+  // Full day toggle in Vehicle
+  if (e.target.matches("[data-v-fullday], [data-v-fullday-no]")) {
+    const gidx = e.target.dataset.gidx;
+    const dkey = e.target.dataset.dkey;
+    const isYes = e.target.value === "1";
+    setDayFullDay(gidx, dkey, isYes);
+    return;
+  }
+  // Full day toggle in Food
+  if (e.target.matches("[data-f-fullday], [data-f-fullday-no]")) {
+    const gidx = e.target.dataset.gidx;
+    const dkey = e.target.dataset.dkey;
+    const isYes = e.target.value === "1";
+    setDayFullDay(gidx, dkey, isYes);
+    return;
+  }
+
+  // Individual Pickup toggle
   if (e.target.matches("[data-v-pickup], [data-v-pickup-no]")) {
     const gidx = e.target.dataset.gidx;
     const dkey = e.target.dataset.dkey;
     const k = `${gidx}_${dkey}`;
     vehicleState[k] = vehicleState[k] || {};
     vehicleState[k].p = e.target.value === "1";
-
-    const showLoc = !!(vehicleState[k].p || vehicleState[k].d);
-    document.querySelectorAll(`[data-v-loc-col="${k}"]`).forEach(el => {
-      el.style.display = showLoc ? "" : "none";
-    });
-
-    const loc = document.querySelector(`input[data-v-pickup-loc][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
-    if (loc) {
-      loc.style.display = vehicleState[k].p ? "block" : "none";
-      if (vehicleState[k].p) loc.focus();
+    if (!vehicleState[k].p) {
+      vehicleState[k].fd = false;
+      const vfd1 = document.getElementById(`vfd_${gidx}_${dkey}_1`);
+      const vfd0 = document.getElementById(`vfd_${gidx}_${dkey}_0`);
+      if (vfd1) vfd1.checked = false;
+      if (vfd0) vfd0.checked = true;
     }
+    const td = e.target.closest("td");
+    const locWrap = td ? td.querySelector(".arr-loc-wrap") : null;
+    if (locWrap) locWrap.style.display = vehicleState[k].p ? "block" : "none";
+    const locInput = td ? td.querySelector("input[type=text]") : null;
+    if (locInput && vehicleState[k].p) locInput.focus();
   }
+
+  // Individual Drop toggle
   if (e.target.matches("[data-v-drop], [data-v-drop-no]")) {
     const gidx = e.target.dataset.gidx;
     const dkey = e.target.dataset.dkey;
     const k = `${gidx}_${dkey}`;
     vehicleState[k] = vehicleState[k] || {};
     vehicleState[k].d = e.target.value === "1";
-
-    const showLoc = !!(vehicleState[k].p || vehicleState[k].d);
-    document.querySelectorAll(`[data-v-loc-col="${k}"]`).forEach(el => {
-      el.style.display = showLoc ? "" : "none";
-    });
-
-    const loc = document.querySelector(`input[data-v-drop-loc][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
-    if (loc) {
-      loc.style.display = vehicleState[k].d ? "block" : "none";
-      if (vehicleState[k].d) loc.focus();
+    if (!vehicleState[k].d) {
+      vehicleState[k].fd = false;
+      const vfd1 = document.getElementById(`vfd_${gidx}_${dkey}_1`);
+      const vfd0 = document.getElementById(`vfd_${gidx}_${dkey}_0`);
+      if (vfd1) vfd1.checked = false;
+      if (vfd0) vfd0.checked = true;
     }
+    const td = e.target.closest("td");
+    const locWrap = td ? td.querySelector(".arr-loc-wrap") : null;
+    if (locWrap) locWrap.style.display = vehicleState[k].d ? "block" : "none";
+    const locInput = td ? td.querySelector("input[type=text]") : null;
+    if (locInput && vehicleState[k].d) locInput.focus();
   }
+
+  // Individual Morning toggle
   if (e.target.matches("[data-f-morning], [data-f-morning-no]")) {
     const gidx = e.target.dataset.gidx;
     const dkey = e.target.dataset.dkey;
     const k = `${gidx}_${dkey}`;
     foodState[k] = foodState[k] || {};
     foodState[k].m = e.target.value === "1";
-
-    const showLoc = !!(foodState[k].m || foodState[k].e || foodState[k].n);
-    document.querySelectorAll(`[data-f-loc-col="${k}"]`).forEach(el => {
-      el.style.display = showLoc ? "" : "none";
-    });
-
-    const loc = document.querySelector(`input[data-f-morning-loc][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
-    if (loc) {
-      loc.style.display = foodState[k].m ? "block" : "none";
-      if (foodState[k].m) loc.focus();
+    if (!foodState[k].m) {
+      foodState[k].fd = false;
+      const ffd1 = document.getElementById(`ffd_${gidx}_${dkey}_1`);
+      const ffd0 = document.getElementById(`ffd_${gidx}_${dkey}_0`);
+      if (ffd1) ffd1.checked = false;
+      if (ffd0) ffd0.checked = true;
     }
+    const td = e.target.closest("td");
+    const locWrap = td ? td.querySelector(".arr-loc-wrap") : null;
+    if (locWrap) locWrap.style.display = foodState[k].m ? "block" : "none";
+    const locInput = td ? td.querySelector("input[type=text]") : null;
+    if (locInput && foodState[k].m) locInput.focus();
   }
+
+  // Individual Evening toggle
   if (e.target.matches("[data-f-evening], [data-f-evening-no]")) {
     const gidx = e.target.dataset.gidx;
     const dkey = e.target.dataset.dkey;
     const k = `${gidx}_${dkey}`;
     foodState[k] = foodState[k] || {};
     foodState[k].e = e.target.value === "1";
-
-    const showLoc = !!(foodState[k].m || foodState[k].e || foodState[k].n);
-    document.querySelectorAll(`[data-f-loc-col="${k}"]`).forEach(el => {
-      el.style.display = showLoc ? "" : "none";
-    });
-
-    const loc = document.querySelector(`input[data-f-evening-loc][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
-    if (loc) {
-      loc.style.display = foodState[k].e ? "block" : "none";
-      if (foodState[k].e) loc.focus();
+    if (!foodState[k].e) {
+      foodState[k].fd = false;
+      const ffd1 = document.getElementById(`ffd_${gidx}_${dkey}_1`);
+      const ffd0 = document.getElementById(`ffd_${gidx}_${dkey}_0`);
+      if (ffd1) ffd1.checked = false;
+      if (ffd0) ffd0.checked = true;
     }
+    const td = e.target.closest("td");
+    const locWrap = td ? td.querySelector(".arr-loc-wrap") : null;
+    if (locWrap) locWrap.style.display = foodState[k].e ? "block" : "none";
+    const locInput = td ? td.querySelector("input[type=text]") : null;
+    if (locInput && foodState[k].e) locInput.focus();
   }
+
+  // Individual Night toggle
   if (e.target.matches("[data-f-night], [data-f-night-no]")) {
     const gidx = e.target.dataset.gidx;
     const dkey = e.target.dataset.dkey;
     const k = `${gidx}_${dkey}`;
     foodState[k] = foodState[k] || {};
     foodState[k].n = e.target.value === "1";
-
-    const showLoc = !!(foodState[k].m || foodState[k].e || foodState[k].n);
-    document.querySelectorAll(`[data-f-loc-col="${k}"]`).forEach(el => {
-      el.style.display = showLoc ? "" : "none";
-    });
-
-    const loc = document.querySelector(`input[data-f-night-loc][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
-    if (loc) {
-      loc.style.display = foodState[k].n ? "block" : "none";
-      if (foodState[k].n) loc.focus();
+    if (!foodState[k].n) {
+      foodState[k].fd = false;
+      const ffd1 = document.getElementById(`ffd_${gidx}_${dkey}_1`);
+      const ffd0 = document.getElementById(`ffd_${gidx}_${dkey}_0`);
+      if (ffd1) ffd1.checked = false;
+      if (ffd0) ffd0.checked = true;
     }
+    const td = e.target.closest("td");
+    const locWrap = td ? td.querySelector(".arr-loc-wrap") : null;
+    if (locWrap) locWrap.style.display = foodState[k].n ? "block" : "none";
+    const locInput = td ? td.querySelector("input[type=text]") : null;
+    if (locInput && foodState[k].n) locInput.focus();
   }
-});
 
-document.addEventListener("input", (e) => {
-  if (e.target.matches("[data-v-pickup-loc], [data-v-drop-loc]")) {
-    const gidx = e.target.dataset.gidx;
-    const dkey = e.target.dataset.dkey;
-    const k = `${gidx}_${dkey}`;
-    vehicleState[k] = vehicleState[k] || {};
-    if (e.target.hasAttribute("data-v-pickup-loc")) vehicleState[k].pl = e.target.value.trim();
-    if (e.target.hasAttribute("data-v-drop-loc")) vehicleState[k].dl = e.target.value.trim();
-  }
-  if (e.target.matches("[data-f-morning-loc], [data-f-evening-loc], [data-f-night-loc]")) {
-    const gidx = e.target.dataset.gidx;
-    const dkey = e.target.dataset.dkey;
-    const k = `${gidx}_${dkey}`;
-    foodState[k] = foodState[k] || {};
-    if (e.target.hasAttribute("data-f-morning-loc")) foodState[k].ml = e.target.value.trim();
-    if (e.target.hasAttribute("data-f-evening-loc")) foodState[k].el = e.target.value.trim();
-    if (e.target.hasAttribute("data-f-night-loc")) foodState[k].nl = e.target.value.trim();
-  }
-});
-
-// Update tables when dates or guests change
-document.getElementById("copyDates").addEventListener("click", () => {
-  const rows = [...document.querySelectorAll("[data-rows] [data-row]")];
-  if (!rows.length) return;
-  const a = rows[0].querySelector("[name=g_arrival]").value, d = rows[0].querySelector("[name=g_departure]").value;
-  rows.slice(1).forEach(r => {
-    const ra = r.querySelector("[name=g_arrival]"), rd = r.querySelector("[name=g_departure]");
-    if (!ra.value) ra.value = a; if (!rd.value) rd.value = d;
-  });
-  renderDailyArrangements();
-});
-
-document.addEventListener("change", (e) => {
   if (e.target.name === "g_arrival") {
     const row = e.target.closest("[data-row]");
     if (row) {
@@ -617,17 +1064,323 @@ document.addEventListener("change", (e) => {
       }
     }
     renderDailyArrangements();
+    updateRequirementsState();
   }
   if (e.target.name === "g_departure" || e.target.name === "g_name") {
     renderDailyArrangements();
+    updateRequirementsState();
   }
-  if (e.target.name === "need_vehicle" || e.target.name === "need_food" || e.target.name === "need_ticket") {
+  if (e.target.name === "need_vehicle" || e.target.name === "need_food" || e.target.name === "need_ticket" || e.target.name === "need_guest_house" || e.target.name === "need_hotel") {
     updateArrangementsVisibility();
     renderDailyArrangements();
+    updateAccommodationSplitNotice();
   }
 });
 
+document.addEventListener("input", (e) => {
+  if (e.target.name === "g_arrival" || e.target.name === "g_departure") {
+    const row = e.target.closest("[data-row]");
+    if (row && e.target.name === "g_arrival") {
+      const dep = row.querySelector("[name=g_departure]");
+      if (dep && e.target.value) {
+        if (!dep.min || e.target.value > dep.min) {
+          dep.min = e.target.value;
+        }
+      }
+    }
+    renderDailyArrangements();
+    updateRequirementsState();
+  }
+  if (e.target.matches("[data-v-fullday-loc]")) {
+    const gidx = e.target.dataset.gidx, dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    vehicleState[k] = vehicleState[k] || {};
+    vehicleState[k].fdl = e.target.value.trim();
+  }
+  if (e.target.matches("[data-v-pickup-loc]")) {
+    const gidx = e.target.dataset.gidx, dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    vehicleState[k] = vehicleState[k] || {};
+    vehicleState[k].pl = e.target.value.trim();
+  }
+  if (e.target.matches("[data-v-drop-loc]")) {
+    const gidx = e.target.dataset.gidx, dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    vehicleState[k] = vehicleState[k] || {};
+    vehicleState[k].dl = e.target.value.trim();
+  }
+  if (e.target.matches("[data-f-fullday-loc]")) {
+    const gidx = e.target.dataset.gidx, dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    foodState[k] = foodState[k] || {};
+    foodState[k].fdl = e.target.value.trim();
+  }
+  if (e.target.matches("[data-f-morning-loc]")) {
+    const gidx = e.target.dataset.gidx, dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    foodState[k] = foodState[k] || {};
+    foodState[k].ml = e.target.value.trim();
+  }
+  if (e.target.matches("[data-f-evening-loc]")) {
+    const gidx = e.target.dataset.gidx, dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    foodState[k] = foodState[k] || {};
+    foodState[k].el = e.target.value.trim();
+  }
+  if (e.target.matches("[data-f-night-loc]")) {
+    const gidx = e.target.dataset.gidx, dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    foodState[k] = foodState[k] || {};
+    foodState[k].nl = e.target.value.trim();
+  }
+});
+
+// Sync all typed location inputs into state before actions
+function syncInputsToState() {
+  document.querySelectorAll("[data-v-pickup-loc]").forEach(input => {
+    const k = `${input.dataset.gidx}_${input.dataset.dkey}`;
+    vehicleState[k] = vehicleState[k] || {};
+    vehicleState[k].pl = input.value.trim();
+  });
+  document.querySelectorAll("[data-v-drop-loc]").forEach(input => {
+    const k = `${input.dataset.gidx}_${input.dataset.dkey}`;
+    vehicleState[k] = vehicleState[k] || {};
+    vehicleState[k].dl = input.value.trim();
+  });
+  document.querySelectorAll("[data-f-morning-loc]").forEach(input => {
+    const k = `${input.dataset.gidx}_${input.dataset.dkey}`;
+    foodState[k] = foodState[k] || {};
+    foodState[k].ml = input.value.trim();
+  });
+  document.querySelectorAll("[data-f-evening-loc]").forEach(input => {
+    const k = `${input.dataset.gidx}_${input.dataset.dkey}`;
+    foodState[k] = foodState[k] || {};
+    foodState[k].el = input.value.trim();
+  });
+  document.querySelectorAll("[data-f-night-loc]").forEach(input => {
+    const k = `${input.dataset.gidx}_${input.dataset.dkey}`;
+    foodState[k] = foodState[k] || {};
+    foodState[k].nl = input.value.trim();
+  });
+}
+
+function ensureGuestDates(targetIdx) {
+  const rows = [...document.querySelectorAll("[data-rows] [data-row]")];
+  if (!rows[0] || !rows[targetIdx]) return;
+  const a0 = rows[0].querySelector("[name=g_arrival]")?.value;
+  const d0 = rows[0].querySelector("[name=g_departure]")?.value;
+  const ra = rows[targetIdx].querySelector("[name=g_arrival]");
+  const rd = rows[targetIdx].querySelector("[name=g_departure]");
+  if (ra && !ra.value && a0) ra.value = a0;
+  if (rd && !rd.value && d0) rd.value = d0;
+}
+
+function copyVehicleData(fromIdx, toIdx) {
+  ensureGuestDates(toIdx);
+  const guests = getGuestsData();
+  const srcGuest = guests.find(g => g.idx === fromIdx);
+  const tgtGuest = guests.find(g => g.idx === toIdx);
+  if (!srcGuest || !tgtGuest) return;
+
+  tgtGuest.days.forEach((d, i) => {
+    let src = vehicleState[`${fromIdx}_${d.key}`];
+    if (!src && srcGuest.days[i]) {
+      src = vehicleState[`${fromIdx}_${srcGuest.days[i].key}`];
+    }
+    const tgtKey = `${toIdx}_${d.key}`;
+    if (src) {
+      vehicleState[tgtKey] = {
+        fd: !!src.fd,
+        p: !!src.p,
+        pl: src.pl || "",
+        d: !!src.d,
+        dl: src.dl || ""
+      };
+    }
+  });
+
+  const vYesRadio = document.getElementById("need_vehicle1");
+  if (vYesRadio && !vYesRadio.checked) {
+    vYesRadio.checked = true;
+    const vNo = document.getElementById("need_vehicle0");
+    if (vNo) vNo.checked = false;
+    updateArrangementsVisibility();
+  }
+}
+
+function copyFoodData(fromIdx, toIdx) {
+  ensureGuestDates(toIdx);
+  const guests = getGuestsData();
+  const srcGuest = guests.find(g => g.idx === fromIdx);
+  const tgtGuest = guests.find(g => g.idx === toIdx);
+  if (!srcGuest || !tgtGuest) return;
+
+  tgtGuest.days.forEach((d, i) => {
+    let src = foodState[`${fromIdx}_${d.key}`];
+    if (!src && srcGuest.days[i]) {
+      src = foodState[`${fromIdx}_${srcGuest.days[i].key}`];
+    }
+    const tgtKey = `${toIdx}_${d.key}`;
+    if (src) {
+      foodState[tgtKey] = {
+        fd: !!src.fd,
+        m: !!src.m,
+        ml: src.ml || "",
+        e: !!src.e,
+        el: src.el || "",
+        n: !!src.n,
+        nl: src.nl || ""
+      };
+    }
+  });
+
+  const fYesRadio = document.getElementById("need_food1");
+  if (fYesRadio && !fYesRadio.checked) {
+    fYesRadio.checked = true;
+    const fNo = document.getElementById("need_food0");
+    if (fNo) fNo.checked = false;
+    updateArrangementsVisibility();
+  }
+}
+
+function flashCopiedButton(selector, text = "✓ Copied!") {
+  const btn = document.querySelector(selector);
+  if (!btn) return;
+  const orig = btn.innerHTML;
+  btn.classList.add("copied");
+  btn.innerHTML = text;
+  setTimeout(() => {
+    btn.classList.remove("copied");
+    btn.innerHTML = orig;
+  }, 1400);
+}
+
+// Update tables when dates or guests change
+document.getElementById("copyDates").addEventListener("click", () => {
+  const rows = [...document.querySelectorAll("[data-rows] [data-row]")];
+  if (!rows.length) return;
+  const a = rows[0].querySelector("[name=g_arrival]").value, d = rows[0].querySelector("[name=g_departure]").value;
+  const org = rows[0].querySelector("[name=g_org]")?.value;
+  rows.slice(1).forEach(r => {
+    const ra = r.querySelector("[name=g_arrival]"), rd = r.querySelector("[name=g_departure]");
+    if (!ra.value) ra.value = a; if (!rd.value) rd.value = d;
+    const ro = r.querySelector("[name=g_org]");
+    if (ro && !ro.value && org) ro.value = org;
+  });
+  renderDailyArrangements();
+  updateRequirementsState();
+});
+
 document.addEventListener("click", (e) => {
+  // Copy vehicle from Guest 1 to this guest
+  const copyVFromBtn = e.target.closest("[data-copy-vehicle-from]");
+  if (copyVFromBtn) {
+    const toIdx = parseInt(copyVFromBtn.dataset.copyVehicleFrom, 10);
+    syncInputsToState();
+    copyVehicleData(0, toIdx);
+    renderDailyArrangements();
+    flashCopiedButton(`[data-copy-vehicle-from="${toIdx}"]`, "✓ Copied from Guest 1!");
+    return;
+  }
+
+  // Copy vehicle from Guest 1 to all next guests
+  const copyVAllBtn = e.target.closest("[data-copy-vehicle-all]");
+  if (copyVAllBtn) {
+    syncInputsToState();
+    const guests = getGuestsData();
+    guests.forEach(g => {
+      if (g.idx !== 0) copyVehicleData(0, g.idx);
+    });
+    renderDailyArrangements();
+    flashCopiedButton("[data-copy-vehicle-all]", "✓ Copied to all guests!");
+    return;
+  }
+
+  // Copy food from Guest 1 to this guest
+  const copyFFromBtn = e.target.closest("[data-copy-food-from]");
+  if (copyFFromBtn) {
+    const toIdx = parseInt(copyFFromBtn.dataset.copyFoodFrom, 10);
+    syncInputsToState();
+    copyFoodData(0, toIdx);
+    renderDailyArrangements();
+    flashCopiedButton(`[data-copy-food-from="${toIdx}"]`, "✓ Copied from Guest 1!");
+    return;
+  }
+
+  // Copy food from Guest 1 to all next guests
+  const copyFAllBtn = e.target.closest("[data-copy-food-all]");
+  if (copyFAllBtn) {
+    syncInputsToState();
+    const guests = getGuestsData();
+    guests.forEach(g => {
+      if (g.idx !== 0) copyFoodData(0, g.idx);
+    });
+    renderDailyArrangements();
+    flashCopiedButton("[data-copy-food-all]", "✓ Copied to all guests!");
+    return;
+  }
+
+  const allFullBtn = e.target.closest("[data-all-fullday]");
+  if (allFullBtn) {
+    const gidx = parseInt(allFullBtn.dataset.allFullday, 10);
+    const guests = getGuestsData();
+    const g = guests[gidx];
+    if (g && g.days) {
+      g.days.forEach(d => {
+        const k = `${gidx}_${d.key}`;
+        vehicleState[k] = vehicleState[k] || {};
+        foodState[k] = foodState[k] || {};
+        vehicleState[k].fd = true;
+        vehicleState[k].p = true;
+        vehicleState[k].d = true;
+        foodState[k].fd = true;
+        foodState[k].m = true;
+        foodState[k].e = true;
+        foodState[k].n = true;
+      });
+      const vYesRadio = document.getElementById("need_vehicle1");
+      if (vYesRadio) vYesRadio.checked = true;
+      const vNo = document.getElementById("need_vehicle0");
+      if (vNo) vNo.checked = false;
+
+      const fYesRadio = document.getElementById("need_food1");
+      if (fYesRadio) fYesRadio.checked = true;
+      const fNo = document.getElementById("need_food0");
+      if (fNo) fNo.checked = false;
+
+      updateArrangementsVisibility();
+      renderDailyArrangements();
+    }
+    return;
+  }
+  const disabledYn = e.target.closest(".need.is-disabled .yn");
+  if (disabledYn) {
+    e.preventDefault();
+    e.stopPropagation();
+    const rows = document.querySelectorAll("[data-rows] [data-row]");
+    if (rows.length) {
+      const arr = rows[0].querySelector("[name=g_arrival]");
+      const dep = rows[0].querySelector("[name=g_departure]");
+      if (arr && !arr.value) {
+        arr.focus();
+        arr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else if (dep && !dep.value) {
+        dep.focus();
+        dep.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+    const banner = document.getElementById("req_date_warning");
+    if (banner) {
+      banner.style.transition = "transform 0.15s ease, box-shadow 0.15s ease";
+      banner.style.transform = "scale(1.02)";
+      banner.style.boxShadow = "0 0 0 3px rgba(245, 158, 11, 0.4)";
+      setTimeout(() => {
+        banner.style.transform = "scale(1)";
+        banner.style.boxShadow = "none";
+      }, 300);
+    }
+    return false;
+  }
   if (e.target.closest("#vehicle_need_block .yn") || e.target.closest("#food_need_block .yn") || e.target.closest("#ticket_need_block .yn")) {
     setTimeout(updateArrangementsVisibility, 0);
   }
@@ -636,6 +1389,7 @@ document.addEventListener("click", (e) => {
     setTimeout(() => {
       renderDailyArrangements();
       updateArrangementsVisibility();
+      updateRequirementsState();
     }, 60);
   }
 });
@@ -690,8 +1444,9 @@ if (reqForm) {
         g.days.forEach(d => {
           const k = `${g.idx}_${d.key}`;
           const st = vehicleState[k];
-          if (st && (st.p || st.d)) {
+          if (st && (st.fd || st.p || st.d)) {
             const parts = [];
+            if (st.fd) parts.push("Full day" + (st.fdl ? ` (${st.fdl})` : ""));
             if (st.p) parts.push("Pickup" + (st.pl ? ` (${st.pl})` : ""));
             if (st.d) parts.push("Drop" + (st.dl ? ` (${st.dl})` : ""));
             if (parts.length) {
@@ -725,8 +1480,9 @@ if (reqForm) {
         g.days.forEach(d => {
           const k = `${g.idx}_${d.key}`;
           const st = foodState[k];
-          if (st && (st.m || st.e || st.n)) {
+          if (st && (st.fd || st.m || st.e || st.n)) {
             const meals = [];
+            if (st.fd) meals.push("Full day" + (st.fdl ? ` (${st.fdl})` : ""));
             if (st.m) meals.push("Morning" + (st.ml ? ` (${st.ml})` : ""));
             if (st.e) meals.push("Evening" + (st.el ? ` (${st.el})` : ""));
             if (st.n) meals.push("Night" + (st.nl ? ` (${st.nl})` : ""));
@@ -770,11 +1526,28 @@ if (reqForm) {
       const tNoteInput = document.getElementById("ticket_note");
       if (tNoteInput) tNoteInput.value = finalT.trim();
     }
+
+    // 4. Validate Guest House + Hotel split explanation
+    const ghYes = document.querySelector("input[name='need_guest_house'][value='1']")?.checked;
+    const hotelYes = document.querySelector("input[name='need_hotel'][value='1']")?.checked;
+    const otherNote = document.getElementById("other_note");
+    if (ghYes && hotelYes && (!otherNote || !otherNote.value.trim())) {
+      alert("Both Guest House and Hotel stay are requested.\n\nPlease explain in 'Anything else' how the stay is split (e.g. which guests or dates stay in guest house vs hotel), or select only one accommodation type if both are not needed.");
+      if (otherNote) {
+        otherNote.focus();
+        otherNote.scrollIntoView({ behavior: "smooth", block: "center" });
+        otherNote.style.borderColor = "#dc2626";
+        otherNote.style.boxShadow = "0 0 0 3px rgba(220, 38, 38, 0.2)";
+      }
+      e.preventDefault();
+      return false;
+    }
   });
 }
 
 // Initial render and visibility
 updateArrangementsVisibility();
 renderDailyArrangements();
+updateRequirementsState();
 </script>
 {% endblock %}

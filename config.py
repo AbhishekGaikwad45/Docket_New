@@ -21,6 +21,7 @@ class Config:
     BANNER_URL = os.getenv("BANNER_URL", "")
 
     CSRF_ENABLED = True
+    TEMPLATES_AUTO_RELOAD = True
 
     # Employee login is an emailed OTP. When mail can't be delivered and this is on,
     # the OTP is shown on screen. Development only - never enable in production.
