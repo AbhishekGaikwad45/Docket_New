@@ -17,7 +17,7 @@ from core.security import permission_required
 
 from .models import (BOOKED, EXPENSES_BY, STATUSES, STAY_TYPES, TRIP_TYPES, VISIT_TYPES,
                      ExpenseBorneBy, Guest, GuestHouse, GuestRequest,
-                     Hotel, Room, Trip, Vehicle, VisitPurpose, room_board, room_conflicts, vehicle_conflicts)
+                     FoodLocation, Hotel, Location, Room, Trip, Vehicle, VisitPurpose, room_board, room_conflicts, vehicle_conflicts)
 
 CODE = "guest_house"
 bp = Blueprint(CODE, __name__, template_folder="templates")
@@ -42,6 +42,20 @@ def get_expenses_by():
     except Exception:
         pass
     return EXPENSES_BY
+
+
+def get_locations():
+    try:
+        return Location.query.filter_by(is_active=True).order_by(Location.point_name).all()
+    except Exception:
+        return []
+
+
+def get_food_locations():
+    try:
+        return FoodLocation.query.filter_by(is_active=True).order_by(FoodLocation.name).all()
+    except Exception:
+        return []
 
 
 def P(*perms):
@@ -249,7 +263,8 @@ def _form_page(req, errors=(), copy_of=None):
         min_departure = None if allow_backdated else now.strftime("%Y-%m-%dT%H:%M")
         return render_template("guest_house/request_form.html", req=req, guests=guests, chain=chain, copy_of=copy_of,
                                visit_types=vt, max_guests=get_setting(CODE, "max_guests"),
-                               allow_backdated=allow_backdated, min_arrival=min_arrival, min_departure=min_departure)
+                               allow_backdated=allow_backdated, min_arrival=min_arrival, min_departure=min_departure,
+                               locations=get_locations(), food_locations=get_food_locations())
 
 
 @bp.route("/requests/new", methods=["GET", "POST"])
@@ -410,14 +425,210 @@ def approvals_page():
 @bp.get("/desk")
 @P("desk")
 def desk():
+    now = datetime.now()
+    today = now.date()
+
+    # Parse date parameters
+    date_param = request.args.get("date") or request.args.get("day")
+    try:
+        start_date = date.fromisoformat(date_param) if date_param else today
+    except Exception:
+        start_date = today
+
+    days_count = 7
+    try:
+        if request.args.get("days"):
+            days_count = max(3, min(30, int(request.args.get("days"))))
+    except Exception:
+        days_count = 7
+
+    dates = [start_date + timedelta(days=i) for i in range(days_count)]
+    prev_date = start_date - timedelta(days=days_count)
+    next_date = start_date + timedelta(days=days_count)
+
+    window_start = datetime.combine(start_date, datetime.min.time())
+    window_end = datetime.combine(dates[-1] + timedelta(days=1), datetime.min.time())
+    booking_statuses = ("approved", "arranged", "completed")
+
+    # 1. Actionable queues
     to_arrange = GuestRequest.query.filter_by(status="approved").order_by(GuestRequest.decided_at).all()
     arranged = GuestRequest.query.filter_by(status="arranged").all()
-    arranged.sort(key=lambda r: r.first_arrival)
-    in_house = Guest.query.join(GuestRequest).filter(GuestRequest.status == "arranged", Guest.checked_in_at.isnot(None),
-                                                     Guest.checked_out_at.is_(None)).all()
+    arranged.sort(key=lambda r: r.first_arrival or datetime.max)
+    in_house = Guest.query.join(GuestRequest).filter(
+        GuestRequest.status.in_(("arranged", "completed")),
+        Guest.checked_in_at.isnot(None),
+        Guest.checked_out_at.is_(None)
+    ).all()
     awaiting_approval = GuestRequest.query.filter_by(status="pending").order_by(GuestRequest.id).all()
-    return render_template("guest_house/desk.html", to_arrange=to_arrange, arranged=arranged, in_house=in_house,
-                           awaiting_approval=awaiting_approval, now=datetime.now())
+
+    # 2. Rooms Occupancy & Vacancy Grid
+    houses = GuestHouse.query.order_by(GuestHouse.name).all()
+    rooms = Room.query.join(GuestHouse).order_by(GuestHouse.name, Room.room_no).all()
+
+    gh_guests = Guest.query.join(GuestRequest).filter(
+        Guest.stay_type == "guest_house",
+        Guest.room_id.isnot(None),
+        GuestRequest.status.in_(booking_statuses),
+        Guest.departure >= window_start,
+        Guest.arrival < window_end
+    ).all()
+
+    room_grid = {}
+    for h in houses:
+        h_rooms = [r for r in rooms if r.guest_house_id == h.id]
+        room_list = []
+        for r in h_rooms:
+            day_data = []
+            for d in dates:
+                d_start = datetime.combine(d, datetime.min.time())
+                d_end = d_start + timedelta(days=1)
+                r_guests = [
+                    g for g in gh_guests
+                    if g.room_id == r.id and (g.span(now)[0] < d_end and g.span(now)[1] > d_start)
+                ]
+                if not r.is_active:
+                    st = "maintenance"
+                elif r_guests:
+                    st = "booked"
+                else:
+                    st = "vacant"
+
+                occupied_beds = len(r_guests)
+                available_beds = max(0, r.capacity - occupied_beds) if r.is_active else 0
+                day_data.append({
+                    "date": d,
+                    "is_today": (d == today),
+                    "status": st,
+                    "guests": r_guests,
+                    "occupied_beds": occupied_beds,
+                    "available_beds": available_beds
+                })
+            room_list.append({
+                "room": r,
+                "days": day_data
+            })
+        room_grid[h] = room_list
+
+    # 3. Vehicles Availability & Vacancy Grid
+    vehicles = Vehicle.query.order_by(Vehicle.reg_no).all()
+    trips = Trip.query.join(GuestRequest).filter(
+        GuestRequest.status.in_(booking_statuses),
+        Trip.end >= window_start,
+        Trip.start < window_end
+    ).all()
+
+    vehicle_grid = []
+    for v in vehicles:
+        day_data = []
+        for d in dates:
+            d_start = datetime.combine(d, datetime.min.time())
+            d_end = d_start + timedelta(days=1)
+            v_trips = [
+                t for t in trips
+                if t.source == "company" and t.vehicle_id == v.id and t.start < d_end and t.end > d_start
+            ]
+            if not v.is_active:
+                st = "maintenance"
+            elif v_trips:
+                st = "booked"
+            else:
+                st = "vacant"
+
+            day_data.append({
+                "date": d,
+                "is_today": (d == today),
+                "status": st,
+                "trips": v_trips
+            })
+        vehicle_grid.append({
+            "vehicle": v,
+            "days": day_data
+        })
+
+    hired_trips = [t for t in trips if t.source == "hired"]
+
+    # 4. Hotels Bookings Grid
+    hotels = Hotel.query.order_by(Hotel.name).all()
+    hotel_guests = Guest.query.join(GuestRequest).filter(
+        Guest.stay_type == "hotel",
+        GuestRequest.status.in_(booking_statuses),
+        Guest.departure >= window_start,
+        Guest.arrival < window_end
+    ).all()
+
+    hotel_grid = []
+    for h in hotels:
+        day_data = []
+        for d in dates:
+            d_start = datetime.combine(d, datetime.min.time())
+            d_end = d_start + timedelta(days=1)
+            h_guests = [
+                g for g in hotel_guests
+                if g.hotel_id == h.id and (g.span(now)[0] < d_end and g.span(now)[1] > d_start)
+            ]
+            day_data.append({
+                "date": d,
+                "is_today": (d == today),
+                "status": "booked" if h_guests else "vacant",
+                "guests": h_guests
+            })
+        hotel_grid.append({
+            "hotel": h,
+            "days": day_data
+        })
+
+    # 5. Summary statistics for today
+    today_start = datetime.combine(today, datetime.min.time())
+    today_end = today_start + timedelta(days=1)
+
+    today_rooms_total = len(rooms)
+    today_rooms_occupied = sum(
+        1 for r in rooms
+        if any(g for g in gh_guests if g.room_id == r.id and g.span(now)[0] < today_end and g.span(now)[1] > today_start)
+    )
+    today_rooms_maintenance = sum(1 for r in rooms if not r.is_active)
+    today_rooms_vacant = max(0, today_rooms_total - today_rooms_occupied - today_rooms_maintenance)
+    today_occupancy_pct = round((today_rooms_occupied / today_rooms_total * 100)) if today_rooms_total else 0
+
+    today_vehicles_total = len(vehicles)
+    today_vehicles_booked = sum(
+        1 for v in vehicles
+        if any(t for t in trips if t.source == "company" and t.vehicle_id == v.id and t.start < today_end and t.end > today_start)
+    )
+    today_vehicles_free = max(0, today_vehicles_total - today_vehicles_booked)
+
+    stats = {
+        "rooms_total": today_rooms_total,
+        "rooms_occupied": today_rooms_occupied,
+        "rooms_vacant": today_rooms_vacant,
+        "rooms_maintenance": today_rooms_maintenance,
+        "occupancy_pct": today_occupancy_pct,
+        "vehicles_total": today_vehicles_total,
+        "vehicles_booked": today_vehicles_booked,
+        "vehicles_free": today_vehicles_free,
+        "in_house_count": len(in_house),
+        "to_arrange_count": len(to_arrange)
+    }
+
+    return render_template(
+        "guest_house/desk.html",
+        to_arrange=to_arrange,
+        arranged=arranged,
+        in_house=in_house,
+        awaiting_approval=awaiting_approval,
+        now=now,
+        today=today,
+        start_date=start_date,
+        days_count=days_count,
+        dates=dates,
+        prev_date=prev_date,
+        next_date=next_date,
+        room_grid=room_grid,
+        vehicle_grid=vehicle_grid,
+        hired_trips=hired_trips,
+        hotel_grid=hotel_grid,
+        stats=stats
+    )
 
 
 @bp.route("/requests/<int:req_id>/arrange", methods=["GET", "POST"])
@@ -474,7 +685,8 @@ def _render_arrange(req):
     vehicles = Vehicle.query.filter_by(is_active=True).order_by(Vehicle.reg_no).all()
     return render_template("guest_house/arrange.html", req=req, rooms=rooms, busy=busy, vehicles=vehicles,
                            hotels=Hotel.query.filter_by(is_active=True).order_by(Hotel.name).all(),
-                           stay_types=STAY_TYPES, trip_types=TRIP_TYPES, expenses_by=get_expenses_by())
+                           stay_types=STAY_TYPES, trip_types=TRIP_TYPES, expenses_by=get_expenses_by(),
+                           locations=get_locations(), food_locations=get_food_locations())
 
 
 def _read_arrangement(req):
@@ -751,13 +963,22 @@ MASTERS = {
     "expense-borne-by": (ExpenseBorneBy, "Expenses borne by", [
         ("name", "Name", "text", True),
         ("description", "Description", "text", False)]),
+    "locations": (Location, "Pickup & drop locations", [
+        ("point_name", "Point name", "text", True),
+        ("city", "City", "text", False),
+        ("state", "State", "text", False),
+        ("location_type", "Type", ["Domestic", "Outstation"], True)]),
+    "food-locations": (FoodLocation, "Food locations", [
+        ("name", "Location / Dining name", "text", True),
+        ("category", "Category", ["Plant Canteen", "Guest House Dining", "VIP Lounge", "Field Delivery / Site", "Other"], True),
+        ("description", "Description / Remarks", "text", False)]),
 }
 
 
 @bp.route("/masters/<kind>", methods=["GET", "POST"])
 @P("masters")
 def masters(kind):
-    model, title, fields = MASTERS.get(kind) or abort(404)
+    model, title, fields = MASTERS.get(kind) or MASTERS.get(kind.replace('_', '-')) or abort(404)
     if request.method == "POST":
         item = db.session.get(model, request.form.get("id", type=int) or 0) or model()
         if request.form.get("action") == "toggle":

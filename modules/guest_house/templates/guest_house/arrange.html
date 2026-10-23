@@ -1,14 +1,20 @@
 {% extends "guest_house/_layout.html" %}
 {% from "guest_house/_macros.html" import dt, dtl, yn %}
-{% block title %}Arrange {{ req.req_no }}{% endblock %}
+{% block title %}Arrange {{ req.req_no }}<datalist id="gh_location_list">
+  {% for loc in locations %}
+    <option value="{{ loc.point_name }}{% if loc.city %} ({{ loc.city }}){% endif %}"></option>
+  {% endfor %}
+</datalist>
+
+{% endblock %}
 {% block heading %}Arrange {{ req.req_no }}{% endblock %}
 {% block actions %}<a class="btn" href="{{ url_for('guest_house.request_view', req_id=req.id) }}">Back to request</a>{% endblock %}
 {% macro trip_row(t) %}
   <tr data-row class="trip-row">
     <td class="rownum muted"></td>
     <td><select name="t_type">{% for x in trip_types %}<option {{ 'selected' if t.trip_type == x }}>{{ x }}</option>{% endfor %}</select>
-      <input type="text" name="t_pickup" value="{{ t.pickup or '' }}" placeholder="From" style="margin-top:4px">
-      <input type="text" name="t_drop" value="{{ t.drop or '' }}" placeholder="To" style="margin-top:4px"></td>
+      <input type="text" name="t_pickup" value="{{ t.pickup or '' }}" placeholder="From" style="margin-top:4px" list="gh_location_list">
+      <input type="text" name="t_drop" value="{{ t.drop or '' }}" placeholder="To" style="margin-top:4px" list="gh_location_list"></td>
     <td><input type="datetime-local" name="t_start" value="{{ dtl(t.start) }}" aria-label="Start">
       <input type="datetime-local" name="t_end" value="{{ dtl(t.end) }}" aria-label="End" style="margin-top:4px"></td>
     <td style="min-width:240px">
@@ -97,7 +103,16 @@
   <section class="card grid g2">
     <div class="field"><label for="food_arrangement">Food arrangement</label>
       <div class="help" style="margin:-2px 0 4px;white-space:pre-line">Asked: {{ yn(req.need_food) }}{% if req.clean_food_note %} - “{{ req.clean_food_note }}”{% endif %}</div>
-      <textarea id="food_arrangement" name="food_arrangement" rows="3">{{ req.food_arrangement or '' }}</textarea></div>
+      <div style="margin-bottom:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <select id="quick_food_loc" style="font-size:12px;padding:4px 8px;border-radius:5px;border:1px solid #cbd5e1" onchange="if(this.value){const fa=document.getElementById('food_arrangement');fa.value=(fa.value?fa.value+'\n':'')+this.value;this.value='';fa.focus();}">
+          <option value="">🍽️ Select food location master…</option>
+          {% for fl in food_locations %}
+            <option value="Arranged at {{ fl.name }}{% if fl.category %} ({{ fl.category }}){% endif %}">{{ fl.name }} ({{ fl.category }})</option>
+          {% endfor %}
+        </select>
+        <span class="muted" style="font-size:11px">Select to add location</span>
+      </div>
+      <textarea id="food_arrangement" name="food_arrangement" rows="3" placeholder="Dining venue, meal timings, caterer/canteen instructions…">{{ req.food_arrangement or '' }}</textarea></div>
     <div class="field"><label for="ticket_arrangement">Ticket arrangement</label>
       <div class="help" style="margin:-2px 0 4px;white-space:pre-line">Asked: {{ yn(req.need_ticket) }}{% if req.clean_ticket_note %} - “{{ req.clean_ticket_note }}”{% endif %}</div>
       <textarea id="ticket_arrangement" name="ticket_arrangement" rows="3" placeholder="PNR / flight no., timings, fare…">{{ req.ticket_arrangement or '' }}</textarea></div>

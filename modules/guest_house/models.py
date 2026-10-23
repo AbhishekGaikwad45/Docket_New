@@ -104,6 +104,36 @@ class ExpenseBorneBy(db.Model):
         return self.name
 
 
+class Location(db.Model):
+    __tablename__ = "gh_locations"
+    id = db.Column(db.Integer, primary_key=True)
+    point_name = db.Column(db.String(150), nullable=False)
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(100))
+    location_type = db.Column(db.String(50), default="Domestic", nullable=False)  # Domestic / Outstation
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+
+    def __str__(self):
+        parts = [self.point_name]
+        if self.city:
+            parts.append(self.city)
+        return ", ".join(parts)
+
+class FoodLocation(db.Model):
+    __tablename__ = "gh_food_locations"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    category = db.Column(db.String(100), default="Plant Canteen", nullable=False)
+    description = db.Column(db.String(255))
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+
+    def __str__(self):
+        parts = [self.name]
+        if self.category:
+            parts.append(f"({self.category})")
+        return " ".join(parts)
+
+
 class GuestRequest(db.Model):
     __tablename__ = "gh_requests"
     id = db.Column(db.Integer, primary_key=True)
@@ -203,7 +233,9 @@ class GuestRequest(db.Model):
         if not self.ticket_note:
             return ""
         import re
-        return re.sub(r"<!--TRAVEL_MODE:.*?-->", "", self.ticket_note, flags=re.S).strip()
+        t = re.sub(r"<!--TRAVEL_MODE:.*?-->", "", self.ticket_note, flags=re.S)
+        t = re.sub(r"<!--TICKET_DATA:.*?-->", "", t, flags=re.S)
+        return t.strip()
 
     @property
     def status_label(self):
