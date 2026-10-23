@@ -1,6 +1,17 @@
 {% extends "guest_house/_layout.html" %}
 {% from "guest_house/_macros.html" import dtl %}
-{% block title %}Guest requisition{% endblock %}
+{% block title %}Guest requisition<datalist id="gh_location_list">
+  {% for loc in locations %}
+    <option value="{{ loc.point_name }}{% if loc.city %} ({{ loc.city }}){% endif %}"></option>
+  {% endfor %}
+</datalist>
+<datalist id="gh_food_location_list">
+  {% for floc in food_locations %}
+    <option value="{{ floc.name }}">{{ floc.category }}</option>
+  {% endfor %}
+</datalist>
+
+{% endblock %}
 {% block heading %}{{ 'Edit & resubmit ' ~ req.req_no if req.id else 'Guest requisition form' }}{% endblock %}
 {% macro guest_row(gst) %}
   <tr data-row>
@@ -256,6 +267,35 @@
   margin-top: 6px;
   width: 100%;
 }
+.arr-loc-select {
+  font-size: 11px;
+  padding: 4px 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #1e293b;
+  display: block;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.arr-loc-select:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+  outline: none;
+}
+.food-card .arr-loc-select:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
+  outline: none;
+}
+.arr-loc-select optgroup {
+  font-weight: 700;
+  color: #475569;
+  background: #f8fafc;
+}
 .arr-loc-input {
   font-size: 11px;
   padding: 4px 8px;
@@ -402,19 +442,33 @@
         <span class="req-date-notice"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>Please enter the date</span>
       </div>
       <div id="ticket_arr_wrap" class="arr-body" style="display: {{ 'block' if req.need_ticket else 'none' }};">
-        <div class="arr-card" style="max-width:680px">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start">
+        <div class="arr-card" style="max-width:840px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px">
+          <div style="display:grid;grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; align-items:start">
             <div>
-              <select id="travel_mode" name="travel_mode" aria-label="Travel mode" style="width:100%;height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:4px;background:#fff;font-size:13px;box-sizing:border-box">
+              <label for="travel_mode" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">Travel Mode <span class="req" style="color:#dc2626"></span></label>
+              <select id="travel_mode" name="travel_mode" aria-label="Travel mode" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
                 <option value="">Select travel mode…</option>
-                <option value="Air">Air</option>
-                <option value="Rail">Rail</option>
-                <option value="Flight">Flight</option>
+                <option value="Flight">Flight / Air</option>
+                <option value="Rail">Rail / Train</option>
+                <option value="Bus">Bus</option>
               </select>
             </div>
             <div>
-              <textarea id="ticket_details" rows="2" placeholder="From - to, date, class, preferred timings…" aria-label="Travel ticket details" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:4px;padding:6px 8px;font-size:12px"></textarea>
+              <label for="ticket_from" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">From <span class="req" style="color:#dc2626"></span></label>
+              <input type="text" id="ticket_from" placeholder="Origin (City / Station)" list="gh_location_list" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
             </div>
+            <div>
+              <label for="ticket_to" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">To <span class="req" style="color:#dc2626"></span></label>
+              <input type="text" id="ticket_to" placeholder="Destination (City / Station)" list="gh_location_list" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
+            </div>
+            <div>
+              <label for="ticket_return" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">Return</label>
+              <input type="text" id="ticket_return" placeholder="Return date &amp; details (or 'None')" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
+            </div>
+          </div>
+          <div style="margin-top:10px">
+            <label for="ticket_remarks" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">Class, Timings &amp; Remarks <span class="muted" style="font-size:11px;font-weight:normal">(Optional)</span></label>
+            <input type="text" id="ticket_remarks" placeholder="e.g. Economy / 2A / 3A, morning preference, flight or train no. if known…" style="width:100%;height:34px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:12px;box-sizing:border-box">
           </div>
           <input type="hidden" name="ticket_note" id="ticket_note" value="{{ req.ticket_note or '' }}">
         </div>
@@ -447,6 +501,117 @@
 let vehicleState = {};
 let foodState = {};
 
+const MASTER_LOCATIONS = [
+  {% for loc in locations %}
+  {
+    id: {{ loc.id }},
+    name: {{ loc.point_name|tojson }},
+    city: {{ (loc.city or '')|tojson }},
+    state: {{ (loc.state or '')|tojson }},
+    type: {{ (loc.location_type or 'Domestic')|tojson }},
+    label: {{ (loc.point_name ~ (' (' ~ loc.city ~ ')' if loc.city else ''))|tojson }}
+  },
+  {% endfor %}
+];
+
+const MASTER_FOOD_LOCATIONS = [
+  {% for floc in food_locations %}
+  {
+    id: {{ floc.id }},
+    name: {{ floc.name|tojson }},
+    category: {{ (floc.category or 'Plant Canteen')|tojson }},
+    description: {{ (floc.description or '')|tojson }},
+    label: {{ (floc.name ~ (' (' ~ floc.category ~ ')' if floc.category else ''))|tojson }}
+  },
+  {% endfor %}
+];
+
+function renderLocationSelector(selectAttr, inputAttr, gidx, dkey, currentVal, placeholder, isVisible) {
+  currentVal = (currentVal || "").trim();
+  const isMaster = MASTER_LOCATIONS.some(l => l.name.toLowerCase() === currentVal.toLowerCase() || l.label.toLowerCase() === currentVal.toLowerCase());
+  const isOther = !!(currentVal && !isMaster);
+
+  const domestic = MASTER_LOCATIONS.filter(l => (l.type || "").toLowerCase() !== "outstation");
+  const outstation = MASTER_LOCATIONS.filter(l => (l.type || "").toLowerCase() === "outstation");
+
+  let optHtml = `<option value="">🚗 Select pickup / drop point…</option>`;
+  if (domestic.length) {
+    optHtml += `<optgroup label="📍 Domestic / Local">`;
+    domestic.forEach(l => {
+      const match = (currentVal.toLowerCase() === l.name.toLowerCase() || currentVal.toLowerCase() === l.label.toLowerCase());
+      optHtml += `<option value="${escapeHtml(l.name)}" ${match ? 'selected' : ''}>${escapeHtml(l.label)}</option>`;
+    });
+    optHtml += `</optgroup>`;
+  }
+  if (outstation.length) {
+    optHtml += `<optgroup label="✈️ Outstation">`;
+    outstation.forEach(l => {
+      const match = (currentVal.toLowerCase() === l.name.toLowerCase() || currentVal.toLowerCase() === l.label.toLowerCase());
+      optHtml += `<option value="${escapeHtml(l.name)}" ${match ? 'selected' : ''}>${escapeHtml(l.label)}</option>`;
+    });
+    optHtml += `</optgroup>`;
+  }
+  optHtml += `<option value="__other__" ${isOther ? 'selected' : ''}>✏️ Other / Custom location…</option>`;
+
+  return `
+    <div class="arr-loc-wrap" style="display:${isVisible ? 'block' : 'none'}">
+      <select class="arr-loc-select" ${selectAttr} data-gidx="${gidx}" data-dkey="${dkey}">
+        ${optHtml}
+      </select>
+      <input type="text"
+             ${inputAttr}
+             data-gidx="${gidx}"
+             data-dkey="${dkey}"
+             placeholder="${placeholder}"
+             value="${escapeHtml(currentVal)}"
+             class="arr-loc-input arr-loc-custom"
+             style="margin-top:4px;display:${isOther ? 'block' : 'none'}"
+             list="gh_location_list">
+    </div>
+  `;
+}
+
+function renderFoodLocationSelector(selectAttr, inputAttr, gidx, dkey, currentVal, placeholder, isVisible) {
+  currentVal = (currentVal || "").trim();
+  const isMaster = MASTER_FOOD_LOCATIONS.some(l => l.name.toLowerCase() === currentVal.toLowerCase() || l.label.toLowerCase() === currentVal.toLowerCase());
+  const isOther = !!(currentVal && !isMaster);
+
+  const categories = {};
+  MASTER_FOOD_LOCATIONS.forEach(l => {
+    const cat = l.category || 'Dining Locations';
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push(l);
+  });
+
+  let optHtml = `<option value="">🍽️ Select dining location…</option>`;
+  Object.keys(categories).forEach(cat => {
+    optHtml += `<optgroup label="${escapeHtml(cat)}">`;
+    categories[cat].forEach(l => {
+      const match = (currentVal.toLowerCase() === l.name.toLowerCase() || currentVal.toLowerCase() === l.label.toLowerCase());
+      optHtml += `<option value="${escapeHtml(l.name)}" ${match ? 'selected' : ''}>${escapeHtml(l.label)}</option>`;
+    });
+    optHtml += `</optgroup>`;
+  });
+  optHtml += `<option value="__other__" ${isOther ? 'selected' : ''}>✏️ Other / Custom location…</option>`;
+
+  return `
+    <div class="arr-loc-wrap" style="display:${isVisible ? 'block' : 'none'}">
+      <select class="arr-loc-select" ${selectAttr} data-gidx="${gidx}" data-dkey="${dkey}">
+        ${optHtml}
+      </select>
+      <input type="text"
+             ${inputAttr}
+             data-gidx="${gidx}"
+             data-dkey="${dkey}"
+             placeholder="${placeholder}"
+             value="${escapeHtml(currentVal)}"
+             class="arr-loc-input arr-loc-custom"
+             style="margin-top:4px;display:${isOther ? 'block' : 'none'}"
+             list="gh_food_location_list">
+    </div>
+  `;
+}
+
 // Parse existing notes on load
 (function initNotes() {
   const vEl = document.getElementById("vehicle_note");
@@ -469,21 +634,42 @@ let foodState = {};
 
   const tEl = document.getElementById("ticket_note");
   const modeSelect = document.getElementById("travel_mode");
-  const detailsText = document.getElementById("ticket_details");
-  if (tEl && modeSelect && detailsText && tEl.value) {
-    const raw = tEl.value.trim();
-    let mode = "";
-    const match = raw.match(/<!--TRAVEL_MODE:(.*?)-->/);
-    if (match) {
-      mode = match[1];
-    } else {
-      const m = raw.match(/^Mode:\s*([^|\n]+)/i);
-      if (m) mode = m[1].trim();
-    }
-    if (mode) modeSelect.value = mode;
+  const fromInput = document.getElementById("ticket_from");
+  const toInput = document.getElementById("ticket_to");
+  const returnInput = document.getElementById("ticket_return");
+  const remarksInput = document.getElementById("ticket_remarks");
 
-    let cleanDetails = raw.replace(/<!--TRAVEL_MODE:.*?-->/g, "").replace(/^Mode:\s*[^|\n]+(\s*\|\s*)?/i, "").trim();
-    detailsText.value = cleanDetails;
+  if (tEl && tEl.value) {
+    const raw = tEl.value.trim();
+    const matchJson = raw.match(/<!--TICKET_DATA:(.*?)-->/s);
+    if (matchJson) {
+      try {
+        const data = JSON.parse(matchJson[1]);
+        if (modeSelect && data.mode) modeSelect.value = data.mode;
+        if (fromInput && data.from) fromInput.value = data.from;
+        if (toInput && data.to) toInput.value = data.to;
+        if (returnInput && data.return) returnInput.value = data.return;
+        if (remarksInput && data.remarks) remarksInput.value = data.remarks;
+      } catch(e) {}
+    } else {
+      const matchMode = raw.match(/<!--TRAVEL_MODE:(.*?)-->/) || raw.match(/Travel Mode:\s*([^\n]+)/i) || raw.match(/^Mode:\s*([^|\n]+)/i);
+      if (matchMode && modeSelect) modeSelect.value = matchMode[1].trim();
+
+      const mFrom = raw.match(/From:\s*([^\n]+)/i);
+      const mTo = raw.match(/To:\s*([^\n]+)/i);
+      const mReturn = raw.match(/Return:\s*([^\n]+)/i);
+      const mRemarks = raw.match(/(?:Class|Timings|Remarks|Details):\s*([^\n]+)/i);
+
+      if (mFrom && fromInput) fromInput.value = mFrom[1].trim();
+      if (mTo && toInput) toInput.value = mTo[1].trim();
+      if (mReturn && returnInput) returnInput.value = mReturn[1].trim();
+      if (mRemarks && remarksInput) remarksInput.value = mRemarks[1].trim();
+
+      if (!mFrom && !mTo && !mReturn) {
+        let clean = raw.replace(/<!--TRAVEL_MODE:.*?-->/g, "").replace(/^Mode:\s*[^|\n]+(\s*\|\s*)?/i, "").replace(/^Travel Mode:\s*[^\n]+\n?/i, "").trim();
+        if (remarksInput) remarksInput.value = clean;
+      }
+    }
   }
 })();
 
@@ -760,9 +946,7 @@ function renderDailyArrangements() {
                           <input type="radio" id="vp_${g.idx}_${d.key}_0" name="vp_${g.idx}_${d.key}" value="0" data-v-pickup-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.p ? 'checked' : ''}>
                           <label for="vp_${g.idx}_${d.key}_0">No</label>
                         </div>
-                        <div class="arr-loc-wrap" style="display:${st.p ? 'block' : 'none'}">
-                          <input type="text" data-v-pickup-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="📍 Pickup point" value="${escapeHtml(st.pl || '')}" class="arr-loc-input">
-                        </div>
+                        ${renderLocationSelector('data-v-pickup-select', 'data-v-pickup-loc', g.idx, d.key, st.pl, '📍 Enter pickup point', st.p)}
                       </td>
                     `;
                   }).join('')}
@@ -780,9 +964,7 @@ function renderDailyArrangements() {
                           <input type="radio" id="vd_${g.idx}_${d.key}_0" name="vd_${g.idx}_${d.key}" value="0" data-v-drop-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.d ? 'checked' : ''}>
                           <label for="vd_${g.idx}_${d.key}_0">No</label>
                         </div>
-                        <div class="arr-loc-wrap" style="display:${st.d ? 'block' : 'none'}">
-                          <input type="text" data-v-drop-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="📍 Drop destination" value="${escapeHtml(st.dl || '')}" class="arr-loc-input">
-                        </div>
+                        ${renderLocationSelector('data-v-drop-select', 'data-v-drop-loc', g.idx, d.key, st.dl, '📍 Enter drop destination', st.d)}
                       </td>
                     `;
                   }).join('')}
@@ -858,9 +1040,7 @@ function renderDailyArrangements() {
                           <input type="radio" id="fm_${g.idx}_${d.key}_0" name="fm_${g.idx}_${d.key}" value="0" data-f-morning-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.m ? 'checked' : ''}>
                           <label for="fm_${g.idx}_${d.key}_0">No</label>
                         </div>
-                        <div class="arr-loc-wrap" style="display:${st.m ? 'block' : 'none'}">
-                          <input type="text" data-f-morning-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="📍 Breakfast location" value="${escapeHtml(st.ml || '')}" class="arr-loc-input">
-                        </div>
+                        ${renderFoodLocationSelector('data-f-morning-select', 'data-f-morning-loc', g.idx, d.key, st.ml, '🍽️ Breakfast location', st.m)}
                       </td>
                     `;
                   }).join('')}
@@ -878,9 +1058,7 @@ function renderDailyArrangements() {
                           <input type="radio" id="fe_${g.idx}_${d.key}_0" name="fe_${g.idx}_${d.key}" value="0" data-f-evening-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.e ? 'checked' : ''}>
                           <label for="fe_${g.idx}_${d.key}_0">No</label>
                         </div>
-                        <div class="arr-loc-wrap" style="display:${st.e ? 'block' : 'none'}">
-                          <input type="text" data-f-evening-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="📍 Lunch / Evening" value="${escapeHtml(st.el || '')}" class="arr-loc-input">
-                        </div>
+                        ${renderFoodLocationSelector('data-f-evening-select', 'data-f-evening-loc', g.idx, d.key, st.el, '🍽️ Lunch / Evening location', st.e)}
                       </td>
                     `;
                   }).join('')}
@@ -898,9 +1076,7 @@ function renderDailyArrangements() {
                           <input type="radio" id="fn_${g.idx}_${d.key}_0" name="fn_${g.idx}_${d.key}" value="0" data-f-night-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.n ? 'checked' : ''}>
                           <label for="fn_${g.idx}_${d.key}_0">No</label>
                         </div>
-                        <div class="arr-loc-wrap" style="display:${st.n ? 'block' : 'none'}">
-                          <input type="text" data-f-night-loc data-gidx="${g.idx}" data-dkey="${d.key}" placeholder="📍 Dinner location" value="${escapeHtml(st.nl || '')}" class="arr-loc-input">
-                        </div>
+                        ${renderFoodLocationSelector('data-f-night-select', 'data-f-night-loc', g.idx, d.key, st.nl, '🍽️ Dinner location', st.n)}
                       </td>
                     `;
                   }).join('')}
@@ -931,6 +1107,43 @@ function updateArrangementsVisibility() {
 
 // Track vehicle and food input/toggle changes
 document.addEventListener("change", (e) => {
+  // Master Location dropdown change
+  if (e.target.matches("[data-v-pickup-select], [data-v-drop-select], [data-f-morning-select], [data-f-evening-select], [data-f-night-select]")) {
+    const gidx = e.target.dataset.gidx;
+    const dkey = e.target.dataset.dkey;
+    const k = `${gidx}_${dkey}`;
+    const td = e.target.closest("td");
+    const isOther = e.target.value === "__other__";
+    const customInp = td ? td.querySelector(".arr-loc-custom") : null;
+
+    if (customInp) {
+      customInp.style.display = isOther ? "block" : "none";
+      if (isOther) {
+        customInp.focus();
+      } else {
+        customInp.value = e.target.value;
+      }
+    }
+
+    const val = isOther ? (customInp ? customInp.value.trim() : "") : e.target.value;
+    if (e.target.matches("[data-v-pickup-select]")) {
+      vehicleState[k] = vehicleState[k] || {};
+      vehicleState[k].pl = val;
+    } else if (e.target.matches("[data-v-drop-select]")) {
+      vehicleState[k] = vehicleState[k] || {};
+      vehicleState[k].dl = val;
+    } else if (e.target.matches("[data-f-morning-select]")) {
+      foodState[k] = foodState[k] || {};
+      foodState[k].ml = val;
+    } else if (e.target.matches("[data-f-evening-select]")) {
+      foodState[k] = foodState[k] || {};
+      foodState[k].el = val;
+    } else if (e.target.matches("[data-f-night-select]")) {
+      foodState[k] = foodState[k] || {};
+      foodState[k].nl = val;
+    }
+    return;
+  }
   // Full day toggle in Vehicle
   if (e.target.matches("[data-v-fullday], [data-v-fullday-no]")) {
     const gidx = e.target.dataset.gidx;
@@ -1135,32 +1348,37 @@ document.addEventListener("input", (e) => {
   }
 });
 
-// Sync all typed location inputs into state before actions
+// Sync all typed and selected location inputs into state before actions
 function syncInputsToState() {
-  document.querySelectorAll("[data-v-pickup-loc]").forEach(input => {
-    const k = `${input.dataset.gidx}_${input.dataset.dkey}`;
+  document.querySelectorAll("[data-v-pickup-select]").forEach(sel => {
+    const k = `${sel.dataset.gidx}_${sel.dataset.dkey}`;
+    const inp = sel.closest("td")?.querySelector("[data-v-pickup-loc]");
     vehicleState[k] = vehicleState[k] || {};
-    vehicleState[k].pl = input.value.trim();
+    vehicleState[k].pl = (sel.value && sel.value !== "__other__") ? sel.value : (inp ? inp.value.trim() : "");
   });
-  document.querySelectorAll("[data-v-drop-loc]").forEach(input => {
-    const k = `${input.dataset.gidx}_${input.dataset.dkey}`;
+  document.querySelectorAll("[data-v-drop-select]").forEach(sel => {
+    const k = `${sel.dataset.gidx}_${sel.dataset.dkey}`;
+    const inp = sel.closest("td")?.querySelector("[data-v-drop-loc]");
     vehicleState[k] = vehicleState[k] || {};
-    vehicleState[k].dl = input.value.trim();
+    vehicleState[k].dl = (sel.value && sel.value !== "__other__") ? sel.value : (inp ? inp.value.trim() : "");
   });
-  document.querySelectorAll("[data-f-morning-loc]").forEach(input => {
-    const k = `${input.dataset.gidx}_${input.dataset.dkey}`;
+  document.querySelectorAll("[data-f-morning-select]").forEach(sel => {
+    const k = `${sel.dataset.gidx}_${sel.dataset.dkey}`;
+    const inp = sel.closest("td")?.querySelector("[data-f-morning-loc]");
     foodState[k] = foodState[k] || {};
-    foodState[k].ml = input.value.trim();
+    foodState[k].ml = (sel.value && sel.value !== "__other__") ? sel.value : (inp ? inp.value.trim() : "");
   });
-  document.querySelectorAll("[data-f-evening-loc]").forEach(input => {
-    const k = `${input.dataset.gidx}_${input.dataset.dkey}`;
+  document.querySelectorAll("[data-f-evening-select]").forEach(sel => {
+    const k = `${sel.dataset.gidx}_${sel.dataset.dkey}`;
+    const inp = sel.closest("td")?.querySelector("[data-f-evening-loc]");
     foodState[k] = foodState[k] || {};
-    foodState[k].el = input.value.trim();
+    foodState[k].el = (sel.value && sel.value !== "__other__") ? sel.value : (inp ? inp.value.trim() : "");
   });
-  document.querySelectorAll("[data-f-night-loc]").forEach(input => {
-    const k = `${input.dataset.gidx}_${input.dataset.dkey}`;
+  document.querySelectorAll("[data-f-night-select]").forEach(sel => {
+    const k = `${sel.dataset.gidx}_${sel.dataset.dkey}`;
+    const inp = sel.closest("td")?.querySelector("[data-f-night-loc]");
     foodState[k] = foodState[k] || {};
-    foodState[k].nl = input.value.trim();
+    foodState[k].nl = (sel.value && sel.value !== "__other__") ? sel.value : (inp ? inp.value.trim() : "");
   });
 }
 
@@ -1506,25 +1724,54 @@ if (reqForm) {
       if (fNoteInput) fNoteInput.value = finalF.trim();
     }
 
-    // 3. Synthesize ticket note
+    // 3. Synthesize ticket note with From, To, Return, Remarks
     const needTicketYes = document.querySelector("#need_ticket1")?.checked;
     if (needTicketYes) {
       const modeSelect = document.getElementById("travel_mode");
       const mode = modeSelect ? modeSelect.value.trim() : "";
       if (!mode) {
-        alert("Please select a Travel mode (Air / Rail / Flight).");
+        alert("Please select a Travel mode (Flight / Rail / Bus).");
         if (modeSelect) modeSelect.focus();
         e.preventDefault();
         return false;
       }
-      const details = document.getElementById("ticket_details")?.value.trim() || "";
-      let finalT = `Travel Mode: ${mode}`;
-      if (details) {
-        finalT += `\nDetails: ${details}`;
+      const fromVal = document.getElementById("ticket_from")?.value.trim() || "";
+      const toVal = document.getElementById("ticket_to")?.value.trim() || "";
+      const returnVal = document.getElementById("ticket_return")?.value.trim() || "";
+      const remarksVal = document.getElementById("ticket_remarks")?.value.trim() || "";
+
+      if (!fromVal) {
+        alert("Please enter the 'From' departure location for travel ticket.");
+        const fInp = document.getElementById("ticket_from");
+        if (fInp) fInp.focus();
+        e.preventDefault();
+        return false;
       }
-      finalT += `\n<!--TRAVEL_MODE:${mode}-->`;
+      if (!toVal) {
+        alert("Please enter the 'To' destination location for travel ticket.");
+        const tInp = document.getElementById("ticket_to");
+        if (tInp) tInp.focus();
+        e.preventDefault();
+        return false;
+      }
+
+      let lines = [`Travel Mode: ${mode}`, `From: ${fromVal}`, `To: ${toVal}`];
+      if (returnVal) lines.push(`Return: ${returnVal}`);
+      if (remarksVal) lines.push(`Remarks / Class: ${remarksVal}`);
+
+      const ticketObj = {
+        mode: mode,
+        from: fromVal,
+        to: toVal,
+        return: returnVal,
+        remarks: remarksVal
+      };
+
+      lines.push(`<!--TICKET_DATA:${JSON.stringify(ticketObj)}-->`);
+      lines.push(`<!--TRAVEL_MODE:${mode}-->`);
+
       const tNoteInput = document.getElementById("ticket_note");
-      if (tNoteInput) tNoteInput.value = finalT.trim();
+      if (tNoteInput) tNoteInput.value = lines.join("\n");
     }
 
     // 4. Validate Guest House + Hotel split explanation
