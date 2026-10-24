@@ -168,6 +168,7 @@ class GuestRequest(db.Model):
     desk_remarks = db.Column(db.Text)
     arranged_by_id = db.Column(db.String(50), db.ForeignKey("employees.employee_id"))
     arranged_at = db.Column(db.DateTime)
+    arrangement_version = db.Column(db.Integer, default=0, nullable=False)
     completed_at = db.Column(db.DateTime)
     cancelled_at = db.Column(db.DateTime)
     cancel_reason = db.Column(db.Text)

@@ -107,8 +107,22 @@ def _advance(app_code, ref_id, rnd):
             continue
         task.status, task.activated_at = "pending", now
         record = _record(task)
+        earlier_approved = [t for t in tasks if t.status == "approved" and t.acted_by and t.position < task.position]
+        earlier_info = ""
+        if earlier_approved:
+            e_parts = [f"{t.label}" for t in earlier_approved]
+            earlier_info = f"\nApproved earlier at: {', '.join(e_parts)}"
+
+        body_msg = (
+            f"Dear Approver,\n\n"
+            f"A requisition is pending your approval.\n\n"
+            f"Request: {record.approval_title}\n"
+            f"Level: {task.label}{earlier_info}\n\n"
+            f"Please check and provide your approval in Docket.\n\n"
+            f"Best regards,\nAdmin"
+        )
         notify(task.candidate_people, app_code, ref_id, f"Approval needed: {record.approval_title}",
-               _url(record), f"Level: {task.label}", kind="action")
+               _url(record), body_msg, kind="action", include_link_in_email=False)
         return "pending"
     return "approved"
 
@@ -136,9 +150,38 @@ def act(task, actor, action, remarks=""):
         outcome = _advance(task.app_code, task.ref_id, task.round)
         if outcome == "pending":
             record = _record(task)
+            next_task = ApprovalTask.query.filter_by(app_code=task.app_code, ref_id=task.ref_id, round=task.round, status="pending").first()
+            next_label = next_task.label if next_task else "next level"
+            next_people = next_task.candidate_people if next_task else []
+            next_names = " / ".join(p.name for p in next_people) if next_people else next_label
+
+            applicant_msg = (
+                f"Dear {record.applicant.name},\n\n"
+                f"Your requisition {getattr(record, 'req_no', record.approval_title)} has been approved at level: {task.label}.\n\n"
+                f"Current Status: Pending approval at {next_label} ({next_names}).\n\n"
+                f"Best regards,\nAdmin"
+            )
+            cc_people = []
+            try:
+                if task.app_code == "guest_house":
+                    from modules.guest_house.views import get_applicant_hierarchy
+                    cc_people = get_applicant_hierarchy(record)
+            except Exception:
+                pass
+            if not cc_people:
+                all_tasks = ApprovalTask.query.filter_by(app_code=task.app_code, ref_id=task.ref_id, round=task.round).all()
+                seen = {record.applicant.employee_id}
+                if getattr(record.applicant, "manager", None) and record.applicant.manager.employee_id not in seen:
+                    seen.add(record.applicant.manager.employee_id)
+                    cc_people.append(record.applicant.manager)
+                for t in all_tasks:
+                    if t.acted_by and t.acted_by.employee_id not in seen:
+                        seen.add(t.acted_by.employee_id)
+                        cc_people.append(t.acted_by)
+
             notify([record.applicant], task.app_code, task.ref_id,
                    f"{record.approval_title}: approved at {task.label}", _url(record),
-                   f"By {actor.name}. Now waiting for the next level.", email=False)
+                   applicant_msg, email=True, cc_people=cc_people, include_link_in_email=False)
     else:
         ApprovalTask.query.filter_by(app_code=task.app_code, ref_id=task.ref_id, round=task.round, status="waiting") \
             .update({"status": "cancelled"})

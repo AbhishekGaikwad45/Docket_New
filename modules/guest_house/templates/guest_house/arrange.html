@@ -7,7 +7,7 @@
 </datalist>
 
 {% endblock %}
-{% block heading %}Arrange {{ req.req_no }}{% endblock %}
+{% block heading %}Arrange {{ req.req_no }}{% if req.arrangement_version %} <span class="badge" style="font-size:12px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd">Version {{ req.arrangement_version }}</span>{% endif %}{% endblock %}
 {% block actions %}<a class="btn" href="{{ url_for('guest_house.request_view', req_id=req.id) }}">Back to request</a>{% endblock %}
 {% macro trip_row(t) %}
   <tr data-row class="trip-row">
@@ -27,7 +27,7 @@
           <input type="text" name="t_hired_type" value="{{ t.hired_vehicle_type or '' }}" placeholder="Type (Innova…)"></div></div>
     </td>
     <td><input type="text" name="t_driver" value="{{ t.driver_name or '' }}" placeholder="Driver (blank = from master)">
-      <input type="tel" name="t_driver_phone" value="{{ t.driver_phone or '' }}" placeholder="Driver phone" style="margin-top:4px"></td>
+      <input type="tel" name="t_driver_phone" value="{{ t.driver_phone or '' }}" placeholder="Driver phone (10-digit)" pattern="(\+?\d{1,4}[- ]?)?[0-9]{10}" title="Enter a valid 10-digit phone number" style="margin-top:4px"></td>
     <td><input type="number" step="0.01" min="0" name="t_cost" value="{{ t.cost or '' }}" placeholder="Cost" style="min-width:90px">
       <input type="text" name="t_remarks" value="{{ t.remarks or '' }}" placeholder="Remarks" style="margin-top:4px"></td>
     <td><button type="button" class="btn btn-sm btn-bad" data-remove aria-label="Remove trip">✕</button></td>
@@ -119,9 +119,23 @@
     <div class="field span2"><label for="desk_remarks">Desk remarks</label><textarea id="desk_remarks" name="desk_remarks" rows="2">{{ req.desk_remarks or '' }}</textarea></div>
   </section>
 
-  <div class="row">
-    <button class="btn" name="action" value="save">Save draft</button>
-    <button class="btn btn-primary" name="action" value="finalize">{{ 'Save & notify requester' if req.status == 'arranged' else 'Confirm arrangement & notify' }}</button>
+  <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap">
+    {% if req.status == 'arranged' %}
+      <button class="btn btn-primary" name="action" value="finalize" style="font-weight:600">
+        💾 Save &amp; send updated email to requester (CC hierarchy)
+      </button>
+      <button class="btn" name="action" value="save">
+        Save changes without sending email
+      </button>
+    {% else %}
+      <button class="btn btn-primary" name="action" value="finalize">
+        Confirm arrangement &amp; send email
+      </button>
+      <button class="btn" name="action" value="save">
+        Save draft
+      </button>
+    {% endif %}
+    <a class="btn" href="{{ url_for('guest_house.request_view', req_id=req.id) }}">Cancel</a>
   </div>
 </form>
 {% endblock %}

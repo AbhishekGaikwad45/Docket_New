@@ -1,3 +1,4 @@
+import re
 import csv
 import io
 from datetime import date, datetime, timedelta
@@ -117,12 +118,32 @@ def on_approval(ref_id, outcome, actor, remarks):
     req.status, req.decided_at = outcome, datetime.now()
     log_activity(CODE, req.id, actor, f"Request {outcome}", remarks)
     words = {"approved": "approved", "rejected": "rejected", "returned": "sent back to you for changes"}[outcome]
+
+    applicant_body = (
+        f"Dear {req.applicant.name},\n\n"
+        f"Your guest requisition {req.req_no} has been {words}.\n"
+        + (f"Remarks: {remarks}\n" if remarks else "")
+        + ("It has been forwarded to the Administration Desk for arrangement.\n" if outcome == "approved" else "")
+        + "\nBest regards,\nAdmin"
+    )
+    hierarchy = get_applicant_hierarchy(req)
     notify([req.applicant], CODE, req.id, f"{req.req_no} {words}", _link(req),
-           f"By {actor.name}. Remarks: {remarks or '-'}", kind="action" if outcome == "returned" else "update")
+           applicant_body, kind="action" if outcome == "returned" else "update",
+           cc_people=hierarchy, include_link_in_email=False)
+
     if outcome == "approved":
+        desk_body = (
+            f"Dear Administration Desk,\n\n"
+            f"Guest requisition {req.req_no} has been approved.\n\n"
+            f"Applicant: {req.applicant.name} ({req.department or '-'})\n"
+            f"First Arrival: {req.first_arrival:%d %b %Y %H:%M if req.first_arrival else '-'}\n"
+            f"Guests: {len(req.guests)}\n\n"
+            f"Please proceed with the arrangements in Docket.\n\n"
+            f"Best regards,\nAdmin"
+        )
         notify(_desk(), CODE, req.id, f"{req.req_no} approved - arrangement needed",
                url_for("guest_house.arrange", req_id=req.id),
-               f"{req.approval_title}. First arrival {req.first_arrival:%d %b %Y %H:%M}.", kind="action")
+               desk_body, kind="action", include_link_in_email=False)
 
 
 # ------------------------------------------------------------------ pages
@@ -216,8 +237,17 @@ def _read_form_fields(req):
                 errors.append(f"{label}: arrival is too soon or in the past (minimum notice of {min_notice} hour(s) required).")
         if (guest.departure - guest.arrival).days > max_days:
             errors.append(f"{label}: stay is longer than {max_days} days.")
-        if guest.mobile and not guest.mobile.replace("+", "").replace(" ", "").isdigit():
-            errors.append(f"{label}: mobile number looks wrong.")
+        if guest.mobile:
+            clean_mobile = re.sub(r"[\s\-\(\)]", "", guest.mobile)
+            if clean_mobile.startswith("+91"):
+                clean_mobile = clean_mobile[3:]
+            elif clean_mobile.startswith("0") and len(clean_mobile) == 11:
+                clean_mobile = clean_mobile[1:]
+            if not (clean_mobile.replace("+", "").isdigit() and 10 <= len(clean_mobile.replace("+", "")) <= 13):
+                errors.append(f"{label}: mobile number '{guest.mobile}' is invalid. Please enter a valid 10-digit number.")
+        if guest.email:
+            if not re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", guest.email):
+                errors.append(f"{label}: email address '{guest.email}' is invalid.")
     if not req.guests:
         errors.append("Add at least one guest.")
     if len(req.guests) > get_setting(CODE, "max_guests"):
@@ -239,11 +269,50 @@ def _submit(req, is_resubmit):
     except approvals.ApprovalError as exc:
         return str(exc)
     log_activity(CODE, req.id, g.user, "Resubmitted" if is_resubmit else "Submitted")
+    # Always notify Admin Desk on new request submission
+    needs = []
+    if req.need_guest_house: needs.append("Guest house")
+    if req.need_hotel: needs.append("Hotel")
+    if req.need_vehicle: needs.append("Vehicle")
+    if req.need_food: needs.append("Food")
+    if req.need_ticket: needs.append("Ticket")
+    needs_str = ", ".join(needs) if needs else "None"
+
+    first_arr = req.first_arrival.strftime('%d %b %Y %H:%M') if req.first_arrival else '-'
+    last_dep = req.last_departure.strftime('%d %b %Y %H:%M') if req.last_departure else '-'
+
+    desk_body = (
+        f"Dear Admin,\n\n"
+        f"A new guest requisition {req.req_no} has come, please check.\n\n"
+        f"Request No: {req.req_no}\n"
+            f"Applicant: {req.applicant.name} ({req.department or '-'})\n"
+        f"Visit Type: {req.visit_type} - {req.purpose}\n"
+        f"Guests: {len(req.guests)} guest(s)\n"
+        f"Stay: {first_arr} to {last_dep}\n"
+        f"Requirements: {needs_str}\n"
+        f"Status: Awaiting approval\n\n"
+        f"Best regards,\nAdmin"
+    )
+    notify(_desk(), CODE, req.id, f"New request {req.req_no} has come, please check", _link(req),
+           desk_body, kind="update", include_link_in_email=False)
+
+    # Acknowledge to requester
+    ack_body = (
+        f"Dear {req.applicant.name},\n\n"
+        f"Your guest requisition {req.req_no} has been submitted successfully.\n\n"
+        f"Visit: {req.visit_type} - {req.purpose}\n"
+        f"Stay: {first_arr} to {last_dep}\n"
+        f"Status: Pending approval\n\n"
+        f"You will be notified as each approver in your hierarchy reviews the request.\n\n"
+        f"Best regards,\nAdmin"
+    )
+    hierarchy = get_applicant_hierarchy(req)
+    notify([req.applicant], CODE, req.id, f"Requisition {req.req_no} submitted", _link(req),
+           ack_body, kind="update", cc_people=hierarchy, include_link_in_email=False)
+
     if outcome == "approved":  # empty chain
         on_approval(req.id, "approved", g.user, "No approval steps configured")
-    elif get_setting(CODE, "notify_desk_on_submit"):
-        notify(_desk(), CODE, req.id, f"New guest request {req.req_no} (awaiting approval)", _link(req),
-               req.approval_title)
+
     return None
 
 
@@ -631,6 +700,49 @@ def desk():
     )
 
 
+def get_applicant_hierarchy(req):
+    """Returns list of unique Employee objects representing the applicant's hierarchy (approval chain + reporting managers)."""
+    hierarchy = {}
+    applicant = req.applicant
+    if not applicant:
+        return []
+
+    # 1. Reporting manager chain
+    curr = applicant.manager
+    seen_mgrs = {applicant.employee_id}
+    while curr and curr.employee_id not in seen_mgrs:
+        seen_mgrs.add(curr.employee_id)
+        if curr.is_active and curr.email:
+            hierarchy[curr.employee_id] = curr
+        curr = curr.manager
+
+    # 2. Approval tasks / approvers who approved or are candidates in the approval chain
+    try:
+        from core.models import ApprovalTask
+        tasks = ApprovalTask.query.filter_by(app_code=CODE, ref_id=req.id).all()
+        for t in tasks:
+            if t.acted_by and t.acted_by.is_active and t.acted_by.email and t.acted_by.employee_id != applicant.employee_id:
+                hierarchy[t.acted_by.employee_id] = t.acted_by
+            for cand in t.candidate_people:
+                if cand.is_active and cand.email and cand.employee_id != applicant.employee_id:
+                    hierarchy[cand.employee_id] = cand
+    except Exception:
+        pass
+
+    # 3. Approval org chart planned nodes for this applicant
+    try:
+        from core import approvals
+        path = approvals.route(CODE, applicant)
+        for node in path:
+            for m in node.members:
+                if m.is_active and m.email and m.employee_id != applicant.employee_id:
+                    hierarchy[m.employee_id] = m
+    except Exception:
+        pass
+
+    return list(hierarchy.values())
+
+
 @bp.route("/requests/<int:req_id>/arrange", methods=["GET", "POST"])
 @P("desk")
 def arrange(req_id):
@@ -649,22 +761,48 @@ def arrange(req_id):
             page = _arrange_page(req)
             db.session.rollback()
             return page
-        first_time = req.status == "approved" and finalize
+        first_time = (req.status == "approved" and finalize) or (not req.arrangement_version)
         if finalize or req.status == "arranged":
             req.status = "arranged"
             req.arranged_by_id, req.arranged_at = g.user.employee_id, datetime.now()
-        log_activity(CODE, req.id, g.user, "Arrangement confirmed" if first_time else "Arrangement saved")
+            req.arrangement_version = (req.arrangement_version or 0) + 1
+        ver = req.arrangement_version or 1
+        action_label = f"Arrangement confirmed (v{ver})" if first_time else f"Arrangement updated (v{ver})"
+        log_activity(CODE, req.id, g.user, action_label)
         db.session.flush()
         if req.status == "arranged":
+            # Check what was arranged:
+            has_gh = any(g.stay_type == "guest_house" for g in req.guests)
+            has_vehicle = bool(req.trips)
+            has_food = bool(req.food_arrangement and req.food_arrangement.strip())
+            # Rule: send email when vehicle, guest house, or food is arranged.
+            # In case of hotel only (no GH, vehicle, or food): do NOT send email.
+            should_send_mail = (has_gh or has_vehicle or has_food)
+
+            subject_title = f"{req.req_no}: arrangements {'confirmed' if first_time else 'updated'}"
             details = render_template("guest_house/arrangement_mail.txt", req=req)
-            notify([req.applicant], CODE, req.id,
-                   f"{req.req_no}: arrangements {'confirmed' if first_time else 'updated'}", _link(req), details)
-            send_mail([x.email for x in req.guests], "Your visit: arrangements", details)
+
+            if should_send_mail:
+                hierarchy = get_applicant_hierarchy(req)
+                notify([req.applicant], CODE, req.id, subject_title, _link(req), details, cc_people=hierarchy, include_link_in_email=False)
+                guest_emails = [x.email.strip() for x in req.guests if x.email and '@' in x.email and '.' in x.email.split('@')[-1]]
+                if guest_emails:
+                    send_mail(guest_emails, "Your visit: arrangements", details)
+            else:
+                # In case of hotel only: do NOT send email to anyone, create in-app notification only
+                notify([req.applicant], CODE, req.id, subject_title, _link(req), details, email=False)
+
             # The desk's "arrangement needed" note is done.
             Notification.query.filter_by(app_code=CODE, ref_id=req.id, kind="action", read_at=None) \
                 .filter(Notification.employee_id != req.applicant_id).update({"read_at": datetime.now()})
         db.session.commit()
-        flash("Arrangement saved." if not finalize else "Arrangement confirmed and requester informed.", "success")
+        if finalize:
+            if should_send_mail:
+                flash(f"Arrangement {'confirmed' if first_time else 'updated'} (Version {ver}). Email sent to requester and CC'd to hierarchy.", "success")
+            else:
+                flash(f"Arrangement {'confirmed' if first_time else 'updated'} (Version {ver}). Hotel-only booking: in-app updated, no email sent.", "success")
+        else:
+            flash(f"Arrangement changes saved without sending email (Version {ver}).", "success")
         return redirect(url_for("guest_house.request_view", req_id=req.id))
     return _arrange_page(req)
 
@@ -764,6 +902,14 @@ def _read_arrangement_fields(req):
                     vendor=vendor.strip(), hired_vehicle_no=hired_no.strip().upper(), hired_vehicle_type=hired_type.strip(),
                     driver_name=driver.strip(), driver_phone=driver_phone.strip(), cost=_num(cost), remarks=remarks.strip())
         new_trips.append(trip)
+        if trip.driver_phone:
+            clean_dphone = re.sub(r"[\s\-\(\)]", "", trip.driver_phone)
+            if clean_dphone.startswith("+91"):
+                clean_dphone = clean_dphone[3:]
+            elif clean_dphone.startswith("0") and len(clean_dphone) == 11:
+                clean_dphone = clean_dphone[1:]
+            if not (clean_dphone.replace("+", "").isdigit() and 10 <= len(clean_dphone.replace("+", "")) <= 13):
+                errors.append(f"Trip {n}: driver phone '{trip.driver_phone}' is invalid. Please enter a valid 10-digit number.")
         if not trip.start or not trip.end or trip.end <= trip.start:
             errors.append(f"Trip {n}: start and end time are required and end must be after start.")
             continue

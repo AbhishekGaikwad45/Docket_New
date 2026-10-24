@@ -18,8 +18,8 @@
     <td class="rownum muted"></td>
     <td><input type="text" name="g_name" value="{{ gst.name or '' }}" aria-label="Guest name" required></td>
     <td><select name="g_gender" aria-label="Gender" style="min-width:90px">{% for x in ['', 'Male', 'Female', 'Other'] %}<option {{ 'selected' if (gst.gender or '') == x }}>{{ x }}</option>{% endfor %}</select></td>
-    <td><input type="tel" name="g_mobile" value="{{ gst.mobile or '' }}" aria-label="Mobile"></td>
-    <td><input type="email" name="g_email" value="{{ gst.email or '' }}" aria-label="Email"></td>
+    <td><input type="tel" name="g_mobile" value="{{ gst.mobile or '' }}" aria-label="Mobile" placeholder="10-digit mobile" pattern="(\+?\d{1,4}[- ]?)?[0-9]{10}" title="Please enter a valid 10-digit mobile number"></td>
+    <td><input type="email" name="g_email" value="{{ gst.email or '' }}" aria-label="Email" placeholder="guest@example.com" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address"></td>
     <td><input type="text" name="g_org" value="{{ gst.organisation or '' }}" aria-label="Organisation" placeholder="same as above"></td>
     <td><input type="text" name="g_designation" value="{{ gst.designation or '' }}" aria-label="Designation"></td>
     <td><input type="datetime-local" name="g_arrival" value="{{ dtl(gst.arrival) }}" aria-label="Arrival" required {% if min_arrival %}min="{{ min_arrival }}"{% endif %}></td>
@@ -1772,6 +1772,37 @@ if (reqForm) {
 
       const tNoteInput = document.getElementById("ticket_note");
       if (tNoteInput) tNoteInput.value = lines.join("\n");
+    }
+
+    // 0. Validate Guest Mobile and Email
+    const gMobileInps = form.querySelectorAll("input[name='g_mobile']");
+    const gEmailInps = form.querySelectorAll("input[name='g_email']");
+    const phoneRe = /^(\+?\d{1,4}[- ]?)?[0-9]{10}$/;
+    const emailRe = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+
+    for (let i = 0; i < gMobileInps.length; i++) {
+      const mVal = gMobileInps[i].value.trim();
+      if (mVal) {
+        const cleanM = mVal.replace(/[\s\-()]/g, '');
+        if (!cleanM.replace('+', '').match(/^[0-9]{10,13}$/)) {
+          alert(`Guest #${i + 1}: Please enter a valid 10-digit mobile number (entered: '${mVal}').`);
+          gMobileInps[i].focus();
+          gMobileInps[i].style.borderColor = "#dc2626";
+          e.preventDefault();
+          return false;
+        }
+      }
+    }
+
+    for (let i = 0; i < gEmailInps.length; i++) {
+      const eVal = gEmailInps[i].value.trim();
+      if (eVal && !emailRe.test(eVal)) {
+        alert(`Guest #${i + 1}: Please enter a valid email address (entered: '${eVal}').`);
+        gEmailInps[i].focus();
+        gEmailInps[i].style.borderColor = "#dc2626";
+        e.preventDefault();
+        return false;
+      }
     }
 
     // 4. Validate Guest House + Hotel split explanation

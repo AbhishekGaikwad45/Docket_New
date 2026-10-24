@@ -1,5 +1,6 @@
 Guest requisition {{ req.req_no }} - arrangements
 Visit: {{ req.visit_type }} - {{ req.purpose }}
+{% if req.arranged_at %}Arrangement timestamp: {{ req.arranged_at.strftime('%d %b %Y %H:%M') }}{% endif %}
 
 Guests:
 {% for g in req.guests %}- {{ g.name }}: {{ g.arrival.strftime('%d %b %Y %H:%M') }} to {{ g.departure.strftime('%d %b %Y %H:%M') }} | {{ g.stay_label }}{% if g.hotel_booking_ref %} (ref {{ g.hotel_booking_ref }}){% endif %}
@@ -11,4 +12,5 @@ Guests:
 {% endif %}{% if req.ticket_arrangement %}Tickets: {{ req.ticket_arrangement }}
 {% endif %}{% if req.desk_remarks %}Remarks: {{ req.desk_remarks }}
 {% endif %}
-{{ url_for('guest_house.request_view', req_id=req.id, _external=True) }}
+Best regards,
+Admin
