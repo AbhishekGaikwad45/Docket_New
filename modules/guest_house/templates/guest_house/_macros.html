@@ -1,4 +1,4 @@
-{% macro status(req) %}<span class="badge b-{{ req.status }}">{{ req.status_label }}</span>{% endmacro %}
+{% macro status(req) %}<span class="badge b-{{ req.status }}">{{ req.status_label }}{% if req.status == 'arranged' and req.arrangement_version %} (v{{ req.arrangement_version }}){% endif %}</span>{% endmacro %}
 {% macro dt(v, fmt='%d %b %Y %H:%M') %}{{ v.strftime(fmt) if v else '' }}{% endmacro %}
 {% macro yn(v) %}{{ 'Yes' if v else 'No' }}{% endmacro %}
 {% macro dtl(v) %}{{ v.strftime('%Y-%m-%dT%H:%M') if v else '' }}{% endmacro %}

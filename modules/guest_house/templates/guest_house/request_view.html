@@ -125,7 +125,14 @@
     </section>
 
     <section class="card">
-      <h2>Requested vs. arranged</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <h2 style="margin:0">Requested vs. arranged {% if req.arrangement_version %}<span class="badge" style="font-size:12px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;margin-left:6px">Version {{ req.arrangement_version }}</span>{% endif %}</h2>
+        {% if is_desk and req.status in ('approved', 'arranged') %}
+        <a class="btn btn-sm btn-primary" href="{{ url_for('guest_house.arrange', req_id=req.id) }}" style="display:inline-flex;align-items:center;gap:4px">
+          ✏️ {{ 'Edit / Update arrangement' if req.status == 'arranged' else 'Make arrangement' }}
+        </a>
+        {% endif %}
+      </div>
       <div class="tbl-wrap">
         <table class="tbl">
           <thead>
@@ -194,8 +201,16 @@
           </tbody>
         </table>
       </div>
-      {% if req.arranged_by %}<p class="help">Arranged by {{ req.arranged_by.name }} on {{ dt(req.arranged_at) }}</p>{%
-      endif %}
+      {% if req.arranged_by %}
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px">
+        <p class="help" style="margin:0">Arranged by {{ req.arranged_by.name }} on {{ dt(req.arranged_at) }} {% if req.arrangement_version %}(Version {{ req.arrangement_version }}){% endif %}</p>
+        {% if is_desk and req.status in ('approved', 'arranged') %}
+        <a class="btn btn-sm" href="{{ url_for('guest_house.arrange', req_id=req.id) }}" style="display:inline-flex;align-items:center;gap:4px">
+          ✏️ Edit arrangement
+        </a>
+        {% endif %}
+      </div>
+      {% endif %}
     </section>
 
 
