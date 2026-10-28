@@ -5,6 +5,16 @@
     <option value="{{ loc.point_name }}{% if loc.city %} ({{ loc.city }}){% endif %}"></option>
   {% endfor %}
 </datalist>
+<datalist id="gh_airport_list">
+  {% for apt in airports %}
+    <option value="{{ apt.name }}{% if apt.code %} ({{ apt.code }}){% endif %}{% if apt.city %} - {{ apt.city }}{% endif %}"></option>
+  {% endfor %}
+</datalist>
+<datalist id="gh_railway_station_list">
+  {% for rst in railway_stations %}
+    <option value="{{ rst.name }}{% if rst.code %} ({{ rst.code }}){% endif %}{% if rst.city %} - {{ rst.city }}{% endif %}"></option>
+  {% endfor %}
+</datalist>
 
 {% endblock %}
 {% block heading %}Arrange {{ req.req_no }}{% if req.arrangement_version %} <span class="badge" style="font-size:12px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd">Version {{ req.arrangement_version }}</span>{% endif %}{% endblock %}

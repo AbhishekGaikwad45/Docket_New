@@ -10,6 +10,16 @@
     <option value="{{ floc.name }}">{{ floc.category }}</option>
   {% endfor %}
 </datalist>
+<datalist id="gh_airport_list">
+  {% for apt in airports %}
+    <option value="{{ apt.name }}{% if apt.code %} ({{ apt.code }}){% endif %}{% if apt.city %} - {{ apt.city }}{% endif %}">{{ apt.city or '' }}</option>
+  {% endfor %}
+</datalist>
+<datalist id="gh_railway_station_list">
+  {% for rst in railway_stations %}
+    <option value="{{ rst.name }}{% if rst.code %} ({{ rst.code }}){% endif %}{% if rst.city %} - {{ rst.city }}{% endif %}">{{ rst.city or '' }}</option>
+  {% endfor %}
+</datalist>
 
 {% endblock %}
 {% block heading %}{{ 'Edit & resubmit ' ~ req.req_no if req.id else 'Guest requisition form' }}{% endblock %}
@@ -262,6 +272,140 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
+/* Searchable Multi-Select & Chips */
+.gh-chips-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+  min-height: 0;
+}
+.gh-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.gh-chip .gh-chip-del {
+  background: none;
+  border: none;
+  color: #0369a1;
+  margin-left: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+}
+.gh-chip .gh-chip-del:hover {
+  color: #b91c1c;
+}
+.gh-search-input {
+  width: 100%;
+  height: 32px;
+  font-size: 11.5px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+.gh-search-input:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+  outline: none;
+}
+.food-card .gh-search-input:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
+  outline: none;
+}
+.gh-btn-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.gh-btn-clear:hover {
+  color: #ef4444;
+}
+
+/* Floating searchable dropdown menu */
+.gh-floating-menu {
+  position: fixed;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  max-height: 240px;
+  overflow-y: auto;
+  min-width: 220px;
+  max-width: 360px;
+  font-size: 12px;
+  color: #1e293b;
+  z-index: 999999;
+}
+.gh-floating-optgroup {
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+}
+.gh-floating-optgroup:first-child {
+  border-top: none;
+}
+.gh-floating-option {
+  padding: 6px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: background 0.1s ease;
+}
+.gh-floating-option:hover, .gh-floating-option.gh-active {
+  background: #f1f5f9;
+}
+.gh-floating-option.selected {
+  background: #f0fdf4;
+  color: #166534;
+  font-weight: 600;
+}
+.gh-floating-custom {
+  padding: 7px 10px;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  border-top: 1px solid #e2e8f0;
+  background: #fdf4ff;
+  font-size: 11.5px;
+}
+.gh-floating-custom:hover {
+  background: #fae8ff;
+}
+.gh-floating-empty {
+  padding: 10px 12px;
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-style: italic;
+  text-align: center;
+}
+
 /* Modern Location Input on Next Line */
 .arr-loc-wrap {
   margin-top: 6px;
@@ -446,7 +590,7 @@
           <div style="display:grid;grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; align-items:start">
             <div>
               <label for="travel_mode" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">Travel Mode <span class="req" style="color:#dc2626"></span></label>
-              <select id="travel_mode" name="travel_mode" aria-label="Travel mode" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
+              <select id="travel_mode" name="travel_mode" aria-label="Travel mode" onchange="updateTicketLocationLists()" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
                 <option value="">Select travel mode…</option>
                 <option value="Flight">Flight / Air</option>
                 <option value="Rail">Rail / Train</option>
@@ -454,12 +598,48 @@
               </select>
             </div>
             <div>
-              <label for="ticket_from" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">From <span class="req" style="color:#dc2626"></span></label>
-              <input type="text" id="ticket_from" placeholder="Origin (City / Station)" list="gh_location_list" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
+              <label id="ticket_from_label" for="ticket_from_flight" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">From <span class="req" style="color:#dc2626"></span></label>
+              <select id="ticket_from_flight" aria-label="Departure Airport" onchange="onTicketLocChange('from')" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
+                <option value="">Select departure airport…</option>
+                {% for apt in airports %}
+                  {% set apt_val = (apt.city ~ ' - ' if apt.city else '') ~ apt.name ~ (' (' ~ apt.code ~ ')' if apt.code else '') %}
+                  <option value="{{ apt_val }}">{{ apt_val }}</option>
+                {% endfor %}
+                <option value="__other__">Other (enter manually)…</option>
+              </select>
+              <select id="ticket_from_rail" aria-label="Departure Railway Station" onchange="onTicketLocChange('from')" style="display:none;width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
+                <option value="">Select departure station…</option>
+                {% for rst in railway_stations %}
+                  {% set rst_val = (rst.city ~ ' - ' if rst.city else '') ~ rst.name ~ (' (' ~ rst.code ~ ')' if rst.code else '') %}
+                  <option value="{{ rst_val }}">{{ rst_val }}</option>
+                {% endfor %}
+                <option value="__other__">Other (enter manually)…</option>
+              </select>
+              <input type="text" id="ticket_from_bus" placeholder="Origin (City / Station / Bus Stand)" list="gh_location_list" oninput="onTicketLocChange('from')" style="display:none;width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
+              <input type="text" id="ticket_from_other" placeholder="Enter departure location" oninput="onTicketLocChange('from')" style="display:none;margin-top:6px;width:100%;height:34px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:12px;box-sizing:border-box">
+              <input type="hidden" id="ticket_from" name="ticket_from" value="">
             </div>
             <div>
-              <label for="ticket_to" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">To <span class="req" style="color:#dc2626"></span></label>
-              <input type="text" id="ticket_to" placeholder="Destination (City / Station)" list="gh_location_list" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
+              <label id="ticket_to_label" for="ticket_to_flight" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">To <span class="req" style="color:#dc2626"></span></label>
+              <select id="ticket_to_flight" aria-label="Arrival Airport" onchange="onTicketLocChange('to')" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
+                <option value="">Select arrival airport…</option>
+                {% for apt in airports %}
+                  {% set apt_val = (apt.city ~ ' - ' if apt.city else '') ~ apt.name ~ (' (' ~ apt.code ~ ')' if apt.code else '') %}
+                  <option value="{{ apt_val }}">{{ apt_val }}</option>
+                {% endfor %}
+                <option value="__other__">Other (enter manually)…</option>
+              </select>
+              <select id="ticket_to_rail" aria-label="Arrival Railway Station" onchange="onTicketLocChange('to')" style="display:none;width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
+                <option value="">Select arrival station…</option>
+                {% for rst in railway_stations %}
+                  {% set rst_val = (rst.city ~ ' - ' if rst.city else '') ~ rst.name ~ (' (' ~ rst.code ~ ')' if rst.code else '') %}
+                  <option value="{{ rst_val }}">{{ rst_val }}</option>
+                {% endfor %}
+                <option value="__other__">Other (enter manually)…</option>
+              </select>
+              <input type="text" id="ticket_to_bus" placeholder="Destination (City / Station / Bus Stand)" list="gh_location_list" oninput="onTicketLocChange('to')" style="display:none;width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
+              <input type="text" id="ticket_to_other" placeholder="Enter arrival location" oninput="onTicketLocChange('to')" style="display:none;margin-top:6px;width:100%;height:34px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:12px;box-sizing:border-box">
+              <input type="hidden" id="ticket_to" name="ticket_to" value="">
             </div>
             <div>
               <label for="ticket_return" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">Return</label>
@@ -526,88 +706,115 @@ const MASTER_FOOD_LOCATIONS = [
   {% endfor %}
 ];
 
-function renderLocationSelector(selectAttr, inputAttr, gidx, dkey, currentVal, placeholder, isVisible) {
+function getDropList(k) {
+  const val = vehicleState[k]?.dl;
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  return String(val).split(',').map(s => s.trim()).filter(Boolean);
+}
+
+// 1. Searchable Single-select for Pickup
+function renderPickupLocationSelector(gidx, dkey, currentVal, placeholder, isVisible) {
   currentVal = (currentVal || "").trim();
-  const isMaster = MASTER_LOCATIONS.some(l => l.name.toLowerCase() === currentVal.toLowerCase() || l.label.toLowerCase() === currentVal.toLowerCase());
-  const isOther = !!(currentVal && !isMaster);
-
-  const domestic = MASTER_LOCATIONS.filter(l => (l.type || "").toLowerCase() !== "outstation");
-  const outstation = MASTER_LOCATIONS.filter(l => (l.type || "").toLowerCase() === "outstation");
-
-  let optHtml = `<option value="">🚗 Select pickup / drop point…</option>`;
-  if (domestic.length) {
-    optHtml += `<optgroup label="📍 Domestic / Local">`;
-    domestic.forEach(l => {
-      const match = (currentVal.toLowerCase() === l.name.toLowerCase() || currentVal.toLowerCase() === l.label.toLowerCase());
-      optHtml += `<option value="${escapeHtml(l.name)}" ${match ? 'selected' : ''}>${escapeHtml(l.label)}</option>`;
-    });
-    optHtml += `</optgroup>`;
-  }
-  if (outstation.length) {
-    optHtml += `<optgroup label="✈️ Outstation">`;
-    outstation.forEach(l => {
-      const match = (currentVal.toLowerCase() === l.name.toLowerCase() || currentVal.toLowerCase() === l.label.toLowerCase());
-      optHtml += `<option value="${escapeHtml(l.name)}" ${match ? 'selected' : ''}>${escapeHtml(l.label)}</option>`;
-    });
-    optHtml += `</optgroup>`;
-  }
-  optHtml += `<option value="__other__" ${isOther ? 'selected' : ''}>✏️ Other / Custom location…</option>`;
-
   return `
-    <div class="arr-loc-wrap" style="display:${isVisible ? 'block' : 'none'}">
-      <select class="arr-loc-select" ${selectAttr} data-gidx="${gidx}" data-dkey="${dkey}">
-        ${optHtml}
-      </select>
-      <input type="text"
-             ${inputAttr}
+    <div class="arr-loc-wrap gh-searchable-singleselect"
+         data-pickup-singleselect
+         data-gidx="${gidx}"
+         data-dkey="${dkey}"
+         style="display:${isVisible ? 'block' : 'none'}; margin-top:6px; text-align:left;">
+      <div style="position:relative;">
+        <input type="text"
+               class="gh-search-input gh-pickup-search"
+               data-gidx="${gidx}"
+               data-dkey="${dkey}"
+               placeholder="${placeholder || '🔍 Search pickup point…'}"
+               value="${escapeHtml(currentVal)}"
+               autocomplete="off"
+               style="width:100%; height:32px; padding:4px 24px 4px 8px; font-size:12px; border:1px solid #cbd5e1; border-radius:5px; background:#fff; box-sizing:border-box;">
+        ${currentVal ? `
+          <button type="button" class="gh-btn-clear" data-clear-kind="pickup" data-gidx="${gidx}" data-dkey="${dkey}" title="Clear">&times;</button>
+        ` : `
+          <span style="position:absolute; right:8px; top:50%; transform:translateY(-50%); pointer-events:none; font-size:11px; color:#94a3b8;">🔍</span>
+        `}
+      </div>
+      <input type="hidden"
+             data-v-pickup-loc
              data-gidx="${gidx}"
              data-dkey="${dkey}"
-             placeholder="${placeholder}"
-             value="${escapeHtml(currentVal)}"
-             class="arr-loc-input arr-loc-custom"
-             style="margin-top:4px;display:${isOther ? 'block' : 'none'}"
-             list="gh_location_list">
+             value="${escapeHtml(currentVal)}">
     </div>
   `;
 }
 
-function renderFoodLocationSelector(selectAttr, inputAttr, gidx, dkey, currentVal, placeholder, isVisible) {
-  currentVal = (currentVal || "").trim();
-  const isMaster = MASTER_FOOD_LOCATIONS.some(l => l.name.toLowerCase() === currentVal.toLowerCase() || l.label.toLowerCase() === currentVal.toLowerCase());
-  const isOther = !!(currentVal && !isMaster);
-
-  const categories = {};
-  MASTER_FOOD_LOCATIONS.forEach(l => {
-    const cat = l.category || 'Dining Locations';
-    if (!categories[cat]) categories[cat] = [];
-    categories[cat].push(l);
-  });
-
-  let optHtml = `<option value="">🍽️ Select dining location…</option>`;
-  Object.keys(categories).forEach(cat => {
-    optHtml += `<optgroup label="${escapeHtml(cat)}">`;
-    categories[cat].forEach(l => {
-      const match = (currentVal.toLowerCase() === l.name.toLowerCase() || currentVal.toLowerCase() === l.label.toLowerCase());
-      optHtml += `<option value="${escapeHtml(l.name)}" ${match ? 'selected' : ''}>${escapeHtml(l.label)}</option>`;
-    });
-    optHtml += `</optgroup>`;
-  });
-  optHtml += `<option value="__other__" ${isOther ? 'selected' : ''}>✏️ Other / Custom location…</option>`;
-
+// 2. Searchable Multi-select for Drop
+function renderDropLocationMultiSelector(gidx, dkey, currentVal, placeholder, isVisible) {
+  const selected = Array.isArray(currentVal)
+    ? currentVal
+    : (currentVal ? String(currentVal).split(',').map(s => s.trim()).filter(Boolean) : []);
   return `
-    <div class="arr-loc-wrap" style="display:${isVisible ? 'block' : 'none'}">
-      <select class="arr-loc-select" ${selectAttr} data-gidx="${gidx}" data-dkey="${dkey}">
-        ${optHtml}
-      </select>
-      <input type="text"
-             ${inputAttr}
+    <div class="arr-loc-wrap gh-searchable-multiselect"
+         data-drop-multiselect
+         data-gidx="${gidx}"
+         data-dkey="${dkey}"
+         style="display:${isVisible ? 'block' : 'none'}; margin-top:6px; text-align:left;">
+      <div class="gh-chips-box">
+        ${selected.map(item => `
+          <span class="gh-chip" data-chip-val="${escapeHtml(item)}">
+            <span>${escapeHtml(item)}</span>
+            <button type="button" class="gh-chip-del" data-chip-remove="${escapeHtml(item)}" data-gidx="${gidx}" data-dkey="${dkey}" title="Remove">&times;</button>
+          </span>
+        `).join('')}
+      </div>
+      <div style="position:relative;">
+        <input type="text"
+               class="gh-search-input gh-drop-search"
+               data-gidx="${gidx}"
+               data-dkey="${dkey}"
+               placeholder="${selected.length ? '+ Add another drop…' : (placeholder || '🔍 Search drop destination…')}"
+               autocomplete="off"
+               style="width:100%; height:32px; padding:4px 24px 4px 8px; font-size:12px; border:1px solid #cbd5e1; border-radius:5px; background:#fff; box-sizing:border-box;">
+        <span style="position:absolute; right:8px; top:50%; transform:translateY(-50%); pointer-events:none; font-size:11px; color:#94a3b8;">🔍</span>
+      </div>
+      <input type="hidden"
+             data-v-drop-loc
              data-gidx="${gidx}"
              data-dkey="${dkey}"
-             placeholder="${placeholder}"
-             value="${escapeHtml(currentVal)}"
-             class="arr-loc-input arr-loc-custom"
-             style="margin-top:4px;display:${isOther ? 'block' : 'none'}"
-             list="gh_food_location_list">
+             value="${escapeHtml(selected.join(', '))}">
+    </div>
+  `;
+}
+
+// 3. Searchable Single-select for Food (Morning, Evening, Night)
+function renderFoodLocationSelector(mealType, gidx, dkey, currentVal, placeholder, isVisible) {
+  currentVal = (currentVal || "").trim();
+  return `
+    <div class="arr-loc-wrap gh-searchable-foodselect"
+         data-food-singleselect
+         data-meal="${mealType}"
+         data-gidx="${gidx}"
+         data-dkey="${dkey}"
+         style="display:${isVisible ? 'block' : 'none'}; margin-top:6px; text-align:left;">
+      <div style="position:relative;">
+        <input type="text"
+               class="gh-search-input gh-food-search"
+               data-meal="${mealType}"
+               data-gidx="${gidx}"
+               data-dkey="${dkey}"
+               placeholder="${placeholder || '🍽️ Search food location…'}"
+               value="${escapeHtml(currentVal)}"
+               autocomplete="off"
+               style="width:100%; height:32px; padding:4px 24px 4px 8px; font-size:12px; border:1px solid #cbd5e1; border-radius:5px; background:#fff; box-sizing:border-box;">
+        ${currentVal ? `
+          <button type="button" class="gh-btn-clear" data-clear-kind="${mealType}" data-gidx="${gidx}" data-dkey="${dkey}" title="Clear">&times;</button>
+        ` : `
+          <span style="position:absolute; right:8px; top:50%; transform:translateY(-50%); pointer-events:none; font-size:11px; color:#94a3b8;">🔍</span>
+        `}
+      </div>
+      <input type="hidden"
+             data-f-${mealType}-loc
+             data-gidx="${gidx}"
+             data-dkey="${dkey}"
+             value="${escapeHtml(currentVal)}">
     </div>
   `;
 }
@@ -634,8 +841,6 @@ function renderFoodLocationSelector(selectAttr, inputAttr, gidx, dkey, currentVa
 
   const tEl = document.getElementById("ticket_note");
   const modeSelect = document.getElementById("travel_mode");
-  const fromInput = document.getElementById("ticket_from");
-  const toInput = document.getElementById("ticket_to");
   const returnInput = document.getElementById("ticket_return");
   const remarksInput = document.getElementById("ticket_remarks");
 
@@ -646,22 +851,24 @@ function renderFoodLocationSelector(selectAttr, inputAttr, gidx, dkey, currentVa
       try {
         const data = JSON.parse(matchJson[1]);
         if (modeSelect && data.mode) modeSelect.value = data.mode;
-        if (fromInput && data.from) fromInput.value = data.from;
-        if (toInput && data.to) toInput.value = data.to;
+        if (typeof updateTicketLocationLists === "function") updateTicketLocationLists();
+        if (data.from && typeof setTicketLocValue === "function") setTicketLocValue("from", data.from);
+        if (data.to && typeof setTicketLocValue === "function") setTicketLocValue("to", data.to);
         if (returnInput && data.return) returnInput.value = data.return;
         if (remarksInput && data.remarks) remarksInput.value = data.remarks;
       } catch(e) {}
     } else {
       const matchMode = raw.match(/<!--TRAVEL_MODE:(.*?)-->/) || raw.match(/Travel Mode:\s*([^\n]+)/i) || raw.match(/^Mode:\s*([^|\n]+)/i);
       if (matchMode && modeSelect) modeSelect.value = matchMode[1].trim();
+      if (typeof updateTicketLocationLists === "function") updateTicketLocationLists();
 
       const mFrom = raw.match(/From:\s*([^\n]+)/i);
       const mTo = raw.match(/To:\s*([^\n]+)/i);
       const mReturn = raw.match(/Return:\s*([^\n]+)/i);
       const mRemarks = raw.match(/(?:Class|Timings|Remarks|Details):\s*([^\n]+)/i);
 
-      if (mFrom && fromInput) fromInput.value = mFrom[1].trim();
-      if (mTo && toInput) toInput.value = mTo[1].trim();
+      if (mFrom && typeof setTicketLocValue === "function") setTicketLocValue("from", mFrom[1].trim());
+      if (mTo && typeof setTicketLocValue === "function") setTicketLocValue("to", mTo[1].trim());
       if (mReturn && returnInput) returnInput.value = mReturn[1].trim();
       if (mRemarks && remarksInput) remarksInput.value = mRemarks[1].trim();
 
@@ -891,15 +1098,15 @@ function renderDailyArrangements() {
       html += `
         <div class="arr-card">
           <div class="arr-card-head">
-            <div class="arr-card-title"><span style="font-size:15px">🚗</span> Guest ${g.idx + 1}: ${escapeHtml(g.name)}</div>
+            <div class="arr-card-title"><span style="font-size:15px"></span> Guest ${g.idx + 1}: ${escapeHtml(g.name)}</div>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               ${g.idx === 0 && guests.length > 1 ? `
-                <button type="button" class="btn-copy-schedule" data-copy-vehicle-all title="Copy Guest 1 vehicle schedule & locations to all next guests">📋 Copy to next guest${guests.length > 2 ? 's' : ''}</button>
+                <button type="button" class="btn-copy-schedule" data-copy-vehicle-all title="Copy Guest 1 vehicle schedule & locations to all next guests">Copy to next guest${guests.length > 2 ? 's' : ''}</button>
               ` : ''}
               ${g.idx > 0 ? `
-                <button type="button" class="btn-copy-schedule" data-copy-vehicle-from="${g.idx}" title="Copy vehicle schedule & locations from Guest 1">📋 Copy from Guest 1</button>
+                <button type="button" class="btn-copy-schedule" data-copy-vehicle-from="${g.idx}" title="Copy vehicle schedule & locations from Guest 1">Copy from Guest 1</button>
               ` : ''}
-              <button type="button" class="btn-all-fullday" data-all-fullday="${g.idx}" title="Set all days to Full Day (Vehicle + Food)">⚡ All days Full Day</button>
+              <button type="button" class="btn-all-fullday" data-all-fullday="${g.idx}" title="Set all days to Full Day (Vehicle + Food)"> All days Full Day</button>
             </div>
           </div>
           <div class="tbl-wrap" style="overflow-x:auto">
@@ -908,7 +1115,7 @@ function renderDailyArrangements() {
                 <tr>
                   <th style="min-width:110px;text-align:left;padding-left:12px">Guest ${g.idx + 1}</th>
                   ${g.days.map(d => `
-                    <th style="min-width:115px;text-align:center">
+                    <th style="min-width:165px;text-align:center">
                       <div class="day-num">${d.label}</div>
                       ${d.subLabel ? `<div class="day-date">${d.subLabel}</div>` : ''}
                     </th>
@@ -917,7 +1124,7 @@ function renderDailyArrangements() {
               </thead>
               <tbody>
                 <tr class="row-fullday-vehicle">
-                  <td class="row-hdr" style="font-weight:700;color:#0284c7">☀️ Full day</td>
+                  <td class="row-hdr" style="font-weight:700;color:#0284c7">Full day</td>
                   ${g.days.map(d => {
                     const k = `${g.idx}_${d.key}`;
                     const st = vehicleState[k] || {};
@@ -934,7 +1141,7 @@ function renderDailyArrangements() {
                   }).join('')}
                 </tr>
                 <tr>
-                  <td class="row-hdr">🚗 Pickup</td>
+                  <td class="row-hdr">Pickup</td>
                   ${g.days.map(d => {
                     const k = `${g.idx}_${d.key}`;
                     const st = vehicleState[k] || {};
@@ -946,13 +1153,13 @@ function renderDailyArrangements() {
                           <input type="radio" id="vp_${g.idx}_${d.key}_0" name="vp_${g.idx}_${d.key}" value="0" data-v-pickup-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.p ? 'checked' : ''}>
                           <label for="vp_${g.idx}_${d.key}_0">No</label>
                         </div>
-                        ${renderLocationSelector('data-v-pickup-select', 'data-v-pickup-loc', g.idx, d.key, st.pl, '📍 Enter pickup point', st.p)}
+                        ${renderPickupLocationSelector(g.idx, d.key, st.pl, 'Search pickup point…', st.p)}
                       </td>
                     `;
                   }).join('')}
                 </tr>
                 <tr>
-                  <td class="row-hdr">📍 Drop</td>
+                  <td class="row-hdr">Drop</td>
                   ${g.days.map(d => {
                     const k = `${g.idx}_${d.key}`;
                     const st = vehicleState[k] || {};
@@ -964,7 +1171,7 @@ function renderDailyArrangements() {
                           <input type="radio" id="vd_${g.idx}_${d.key}_0" name="vd_${g.idx}_${d.key}" value="0" data-v-drop-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.d ? 'checked' : ''}>
                           <label for="vd_${g.idx}_${d.key}_0">No</label>
                         </div>
-                        ${renderLocationSelector('data-v-drop-select', 'data-v-drop-loc', g.idx, d.key, st.dl, '📍 Enter drop destination', st.d)}
+                        ${renderDropLocationMultiSelector(g.idx, d.key, st.dl, 'Search drop destination…', st.d)}
                       </td>
                     `;
                   }).join('')}
@@ -988,12 +1195,12 @@ function renderDailyArrangements() {
             <div class="arr-card-title food"><span style="font-size:15px">🍽️</span> Guest ${g.idx + 1}: ${escapeHtml(g.name)}</div>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               ${g.idx === 0 && guests.length > 1 ? `
-                <button type="button" class="btn-copy-schedule food" data-copy-food-all title="Copy Guest 1 food schedule & locations to all next guests">📋 Copy to next guest${guests.length > 2 ? 's' : ''}</button>
+                <button type="button" class="btn-copy-schedule food" data-copy-food-all title="Copy Guest 1 food schedule & locations to all next guests">Copy to next guest${guests.length > 2 ? 's' : ''}</button>
               ` : ''}
               ${g.idx > 0 ? `
-                <button type="button" class="btn-copy-schedule food" data-copy-food-from="${g.idx}" title="Copy food schedule & locations from Guest 1">📋 Copy from Guest 1</button>
+                <button type="button" class="btn-copy-schedule food" data-copy-food-from="${g.idx}" title="Copy food schedule & locations from Guest 1">Copy from Guest 1</button>
               ` : ''}
-              <button type="button" class="btn-all-fullday food" data-all-fullday="${g.idx}" title="Set all days to Full Day (Vehicle + Food)">⚡ All days Full Day</button>
+              <button type="button" class="btn-all-fullday food" data-all-fullday="${g.idx}" title="Set all days to Full Day (Vehicle + Food)">All days Full Day</button>
             </div>
           </div>
           <div class="tbl-wrap" style="overflow-x:auto">
@@ -1002,7 +1209,7 @@ function renderDailyArrangements() {
                 <tr>
                   <th style="min-width:110px;text-align:left;padding-left:12px">Guest ${g.idx + 1}</th>
                   ${g.days.map(d => `
-                    <th style="min-width:115px;text-align:center">
+                    <th style="min-width:165px;text-align:center">
                       <div class="day-num">${d.label}</div>
                       ${d.subLabel ? `<div class="day-date">${d.subLabel}</div>` : ''}
                     </th>
@@ -1028,7 +1235,7 @@ function renderDailyArrangements() {
                   }).join('')}
                 </tr>
                 <tr>
-                  <td class="row-hdr">☕ Morning</td>
+                  <td class="row-hdr">Morning</td>
                   ${g.days.map(d => {
                     const k = `${g.idx}_${d.key}`;
                     const st = foodState[k] || {};
@@ -1040,13 +1247,13 @@ function renderDailyArrangements() {
                           <input type="radio" id="fm_${g.idx}_${d.key}_0" name="fm_${g.idx}_${d.key}" value="0" data-f-morning-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.m ? 'checked' : ''}>
                           <label for="fm_${g.idx}_${d.key}_0">No</label>
                         </div>
-                        ${renderFoodLocationSelector('data-f-morning-select', 'data-f-morning-loc', g.idx, d.key, st.ml, '🍽️ Breakfast location', st.m)}
+                        ${renderFoodLocationSelector('morning', g.idx, d.key, st.ml, '☕ Breakfast location…', st.m)}
                       </td>
                     `;
                   }).join('')}
                 </tr>
                 <tr>
-                  <td class="row-hdr">🍲 Evening</td>
+                  <td class="row-hdr">Evening</td>
                   ${g.days.map(d => {
                     const k = `${g.idx}_${d.key}`;
                     const st = foodState[k] || {};
@@ -1058,13 +1265,13 @@ function renderDailyArrangements() {
                           <input type="radio" id="fe_${g.idx}_${d.key}_0" name="fe_${g.idx}_${d.key}" value="0" data-f-evening-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.e ? 'checked' : ''}>
                           <label for="fe_${g.idx}_${d.key}_0">No</label>
                         </div>
-                        ${renderFoodLocationSelector('data-f-evening-select', 'data-f-evening-loc', g.idx, d.key, st.el, '🍽️ Lunch / Evening location', st.e)}
+                        ${renderFoodLocationSelector('evening', g.idx, d.key, st.el, '🍲 Lunch location…', st.e)}
                       </td>
                     `;
                   }).join('')}
                 </tr>
                 <tr>
-                  <td class="row-hdr">🌙 Night</td>
+                  <td class="row-hdr">Night</td>
                   ${g.days.map(d => {
                     const k = `${g.idx}_${d.key}`;
                     const st = foodState[k] || {};
@@ -1076,7 +1283,7 @@ function renderDailyArrangements() {
                           <input type="radio" id="fn_${g.idx}_${d.key}_0" name="fn_${g.idx}_${d.key}" value="0" data-f-night-no data-gidx="${g.idx}" data-dkey="${d.key}" ${!st.n ? 'checked' : ''}>
                           <label for="fn_${g.idx}_${d.key}_0">No</label>
                         </div>
-                        ${renderFoodLocationSelector('data-f-night-select', 'data-f-night-loc', g.idx, d.key, st.nl, '🍽️ Dinner location', st.n)}
+                        ${renderFoodLocationSelector('night', g.idx, d.key, st.nl, '🌙 Dinner location…', st.n)}
                       </td>
                     `;
                   }).join('')}
@@ -1107,43 +1314,7 @@ function updateArrangementsVisibility() {
 
 // Track vehicle and food input/toggle changes
 document.addEventListener("change", (e) => {
-  // Master Location dropdown change
-  if (e.target.matches("[data-v-pickup-select], [data-v-drop-select], [data-f-morning-select], [data-f-evening-select], [data-f-night-select]")) {
-    const gidx = e.target.dataset.gidx;
-    const dkey = e.target.dataset.dkey;
-    const k = `${gidx}_${dkey}`;
-    const td = e.target.closest("td");
-    const isOther = e.target.value === "__other__";
-    const customInp = td ? td.querySelector(".arr-loc-custom") : null;
 
-    if (customInp) {
-      customInp.style.display = isOther ? "block" : "none";
-      if (isOther) {
-        customInp.focus();
-      } else {
-        customInp.value = e.target.value;
-      }
-    }
-
-    const val = isOther ? (customInp ? customInp.value.trim() : "") : e.target.value;
-    if (e.target.matches("[data-v-pickup-select]")) {
-      vehicleState[k] = vehicleState[k] || {};
-      vehicleState[k].pl = val;
-    } else if (e.target.matches("[data-v-drop-select]")) {
-      vehicleState[k] = vehicleState[k] || {};
-      vehicleState[k].dl = val;
-    } else if (e.target.matches("[data-f-morning-select]")) {
-      foodState[k] = foodState[k] || {};
-      foodState[k].ml = val;
-    } else if (e.target.matches("[data-f-evening-select]")) {
-      foodState[k] = foodState[k] || {};
-      foodState[k].el = val;
-    } else if (e.target.matches("[data-f-night-select]")) {
-      foodState[k] = foodState[k] || {};
-      foodState[k].nl = val;
-    }
-    return;
-  }
   // Full day toggle in Vehicle
   if (e.target.matches("[data-v-fullday], [data-v-fullday-no]")) {
     const gidx = e.target.dataset.gidx;
@@ -1350,35 +1521,30 @@ document.addEventListener("input", (e) => {
 
 // Sync all typed and selected location inputs into state before actions
 function syncInputsToState() {
-  document.querySelectorAll("[data-v-pickup-select]").forEach(sel => {
-    const k = `${sel.dataset.gidx}_${sel.dataset.dkey}`;
-    const inp = sel.closest("td")?.querySelector("[data-v-pickup-loc]");
+  document.querySelectorAll("[data-v-pickup-loc]").forEach(inp => {
+    const k = `${inp.dataset.gidx}_${inp.dataset.dkey}`;
     vehicleState[k] = vehicleState[k] || {};
-    vehicleState[k].pl = (sel.value && sel.value !== "__other__") ? sel.value : (inp ? inp.value.trim() : "");
+    vehicleState[k].pl = inp.value.trim();
   });
-  document.querySelectorAll("[data-v-drop-select]").forEach(sel => {
-    const k = `${sel.dataset.gidx}_${sel.dataset.dkey}`;
-    const inp = sel.closest("td")?.querySelector("[data-v-drop-loc]");
+  document.querySelectorAll("[data-v-drop-loc]").forEach(inp => {
+    const k = `${inp.dataset.gidx}_${inp.dataset.dkey}`;
     vehicleState[k] = vehicleState[k] || {};
-    vehicleState[k].dl = (sel.value && sel.value !== "__other__") ? sel.value : (inp ? inp.value.trim() : "");
+    vehicleState[k].dl = inp.value.trim();
   });
-  document.querySelectorAll("[data-f-morning-select]").forEach(sel => {
-    const k = `${sel.dataset.gidx}_${sel.dataset.dkey}`;
-    const inp = sel.closest("td")?.querySelector("[data-f-morning-loc]");
+  document.querySelectorAll("[data-f-morning-loc]").forEach(inp => {
+    const k = `${inp.dataset.gidx}_${inp.dataset.dkey}`;
     foodState[k] = foodState[k] || {};
-    foodState[k].ml = (sel.value && sel.value !== "__other__") ? sel.value : (inp ? inp.value.trim() : "");
+    foodState[k].ml = inp.value.trim();
   });
-  document.querySelectorAll("[data-f-evening-select]").forEach(sel => {
-    const k = `${sel.dataset.gidx}_${sel.dataset.dkey}`;
-    const inp = sel.closest("td")?.querySelector("[data-f-evening-loc]");
+  document.querySelectorAll("[data-f-evening-loc]").forEach(inp => {
+    const k = `${inp.dataset.gidx}_${inp.dataset.dkey}`;
     foodState[k] = foodState[k] || {};
-    foodState[k].el = (sel.value && sel.value !== "__other__") ? sel.value : (inp ? inp.value.trim() : "");
+    foodState[k].el = inp.value.trim();
   });
-  document.querySelectorAll("[data-f-night-select]").forEach(sel => {
-    const k = `${sel.dataset.gidx}_${sel.dataset.dkey}`;
-    const inp = sel.closest("td")?.querySelector("[data-f-night-loc]");
+  document.querySelectorAll("[data-f-night-loc]").forEach(inp => {
+    const k = `${inp.dataset.gidx}_${inp.dataset.dkey}`;
     foodState[k] = foodState[k] || {};
-    foodState[k].nl = (sel.value && sel.value !== "__other__") ? sel.value : (inp ? inp.value.trim() : "");
+    foodState[k].nl = inp.value.trim();
   });
 }
 
@@ -1735,21 +1901,25 @@ if (reqForm) {
         e.preventDefault();
         return false;
       }
-      const fromVal = document.getElementById("ticket_from")?.value.trim() || "";
-      const toVal = document.getElementById("ticket_to")?.value.trim() || "";
+      const fromVal = typeof getTicketLocValue === "function" ? getTicketLocValue("from") : (document.getElementById("ticket_from")?.value.trim() || "");
+      const toVal = typeof getTicketLocValue === "function" ? getTicketLocValue("to") : (document.getElementById("ticket_to")?.value.trim() || "");
       const returnVal = document.getElementById("ticket_return")?.value.trim() || "";
       const remarksVal = document.getElementById("ticket_remarks")?.value.trim() || "";
 
       if (!fromVal) {
-        alert("Please enter the 'From' departure location for travel ticket.");
-        const fInp = document.getElementById("ticket_from");
+        alert("Please select or enter the 'From' departure location for travel ticket.");
+        const fInp = mode === "Flight" ? document.getElementById("ticket_from_flight") :
+                     mode === "Rail" ? document.getElementById("ticket_from_rail") :
+                     document.getElementById("ticket_from_bus");
         if (fInp) fInp.focus();
         e.preventDefault();
         return false;
       }
       if (!toVal) {
-        alert("Please enter the 'To' destination location for travel ticket.");
-        const tInp = document.getElementById("ticket_to");
+        alert("Please select or enter the 'To' destination location for travel ticket.");
+        const tInp = mode === "Flight" ? document.getElementById("ticket_to_flight") :
+                     mode === "Rail" ? document.getElementById("ticket_to_rail") :
+                     document.getElementById("ticket_to_bus");
         if (tInp) tInp.focus();
         e.preventDefault();
         return false;
@@ -1823,9 +1993,640 @@ if (reqForm) {
   });
 }
 
+function onTicketLocChange(which) {
+  const mode = (document.getElementById("travel_mode")?.value || "").trim();
+  const isRail = (mode === "Rail");
+  const isFlight = (mode === "Flight" || !mode);
+  const sel = isRail ? document.getElementById(`ticket_${which}_rail`)
+            : isFlight ? document.getElementById(`ticket_${which}_flight`)
+            : null;
+  const customInp = document.getElementById(`ticket_${which}_other`);
+  const hiddenInp = document.getElementById(`ticket_${which}`);
+
+  let activeVal = "";
+  if (sel) {
+    if (sel.value === "__other__") {
+      if (customInp) {
+        customInp.style.display = "block";
+        activeVal = customInp.value.trim();
+      }
+    } else {
+      if (customInp) {
+        customInp.style.display = "none";
+        customInp.value = "";
+      }
+      activeVal = sel.value.trim();
+    }
+  } else {
+    const busInp = document.getElementById(`ticket_${which}_bus`);
+    if (busInp) activeVal = busInp.value.trim();
+  }
+
+  if (hiddenInp) hiddenInp.value = activeVal;
+}
+
+function getTicketLocValue(which) {
+  const mode = (document.getElementById("travel_mode")?.value || "").trim();
+  if (mode === "Rail") {
+    const sel = document.getElementById(`ticket_${which}_rail`);
+    if (sel && sel.value === "__other__") {
+      return (document.getElementById(`ticket_${which}_other`)?.value || "").trim();
+    }
+    return sel ? sel.value.trim() : "";
+  } else if (mode === "Bus") {
+    const busInp = document.getElementById(`ticket_${which}_bus`);
+    return busInp ? busInp.value.trim() : "";
+  } else {
+    const sel = document.getElementById(`ticket_${which}_flight`);
+    if (sel && sel.value === "__other__") {
+      return (document.getElementById(`ticket_${which}_other`)?.value || "").trim();
+    }
+    return sel ? sel.value.trim() : "";
+  }
+}
+
+function setTicketLocValue(which, val) {
+  val = (val || "").trim();
+  const mode = (document.getElementById("travel_mode")?.value || "").trim();
+  const flightSel = document.getElementById(`ticket_${which}_flight`);
+  const railSel = document.getElementById(`ticket_${which}_rail`);
+  const busInp = document.getElementById(`ticket_${which}_bus`);
+  const otherInp = document.getElementById(`ticket_${which}_other`);
+  const hiddenInp = document.getElementById(`ticket_${which}`);
+
+  if (!val) {
+    if (flightSel) flightSel.value = "";
+    if (railSel) railSel.value = "";
+    if (busInp) busInp.value = "";
+    if (otherInp) { otherInp.value = ""; otherInp.style.display = "none"; }
+    if (hiddenInp) hiddenInp.value = "";
+    return;
+  }
+
+  function matchOption(selectEl, searchVal) {
+    if (!selectEl) return false;
+    const s = searchVal.toLowerCase();
+    for (let i = 0; i < selectEl.options.length; i++) {
+      const opt = selectEl.options[i];
+      if (!opt.value || opt.value === "__other__") continue;
+      const o = opt.value.toLowerCase();
+      if (o === s || o.includes(s) || s.includes(o)) {
+        selectEl.selectedIndex = i;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  if (mode === "Rail") {
+    if (matchOption(railSel, val)) {
+      if (otherInp) { otherInp.style.display = "none"; otherInp.value = ""; }
+    } else {
+      if (railSel) railSel.value = "__other__";
+      if (otherInp) {
+        otherInp.style.display = "block";
+        otherInp.value = val;
+      }
+    }
+  } else if (mode === "Bus") {
+    if (busInp) busInp.value = val;
+  } else {
+    if (matchOption(flightSel, val)) {
+      if (otherInp) { otherInp.style.display = "none"; otherInp.value = ""; }
+    } else {
+      if (flightSel) flightSel.value = "__other__";
+      if (otherInp) {
+        otherInp.style.display = "block";
+        otherInp.value = val;
+      }
+    }
+  }
+
+  if (hiddenInp) hiddenInp.value = val;
+}
+
+function updateTicketLocationLists() {
+  const modeSelect = document.getElementById("travel_mode");
+  const mode = modeSelect ? modeSelect.value.trim() : "";
+  const fromLbl = document.getElementById("ticket_from_label");
+  const toLbl = document.getElementById("ticket_to_label");
+
+  const fromFlight = document.getElementById("ticket_from_flight");
+  const toFlight = document.getElementById("ticket_to_flight");
+  const fromRail = document.getElementById("ticket_from_rail");
+  const toRail = document.getElementById("ticket_to_rail");
+  const fromBus = document.getElementById("ticket_from_bus");
+  const toBus = document.getElementById("ticket_to_bus");
+  const fromOther = document.getElementById("ticket_from_other");
+  const toOther = document.getElementById("ticket_to_other");
+
+  // Hide all first
+  [fromFlight, toFlight, fromRail, toRail, fromBus, toBus].forEach(el => {
+    if (el) el.style.display = "none";
+  });
+
+  if (mode === "Rail") {
+    if (fromRail) fromRail.style.display = "block";
+    if (toRail) toRail.style.display = "block";
+    if (fromLbl) {
+      fromLbl.setAttribute("for", "ticket_from_rail");
+      fromLbl.innerHTML = 'From (Railway station) <span class="req" style="color:#dc2626">*</span>';
+    }
+    if (toLbl) {
+      toLbl.setAttribute("for", "ticket_to_rail");
+      toLbl.innerHTML = 'To (Railway station) <span class="req" style="color:#dc2626">*</span>';
+    }
+    onTicketLocChange('from');
+    onTicketLocChange('to');
+  } else if (mode === "Bus") {
+    if (fromBus) fromBus.style.display = "block";
+    if (toBus) toBus.style.display = "block";
+    if (fromLbl) {
+      fromLbl.setAttribute("for", "ticket_from_bus");
+      fromLbl.innerHTML = 'From <span class="req" style="color:#dc2626">*</span>';
+    }
+    if (toLbl) {
+      toLbl.setAttribute("for", "ticket_to_bus");
+      toLbl.innerHTML = 'To <span class="req" style="color:#dc2626">*</span>';
+    }
+    if (fromOther) fromOther.style.display = "none";
+    if (toOther) toOther.style.display = "none";
+    onTicketLocChange('from');
+    onTicketLocChange('to');
+  } else {
+    // Flight or default
+    if (fromFlight) fromFlight.style.display = "block";
+    if (toFlight) toFlight.style.display = "block";
+    if (fromLbl) {
+      fromLbl.setAttribute("for", "ticket_from_flight");
+      fromLbl.innerHTML = 'From (Airport) <span class="req" style="color:#dc2626">*</span>';
+    }
+    if (toLbl) {
+      toLbl.setAttribute("for", "ticket_to_flight");
+      toLbl.innerHTML = 'To (Airport) <span class="req" style="color:#dc2626">*</span>';
+    }
+    onTicketLocChange('from');
+    onTicketLocChange('to');
+  }
+}
+
 // Initial render and visibility
 updateArrangementsVisibility();
 renderDailyArrangements();
 updateRequirementsState();
+updateTicketLocationLists();
+
+// ==========================================
+// SEARCHABLE DROPDOWNS & MULTI-SELECT ENGINE
+// ==========================================
+let activeFloatingTarget = null; // { type: 'pickup'|'drop'|'food', gidx, dkey, meal, inputEl }
+
+function getOrCreateFloatingMenu() {
+  let menu = document.getElementById("gh_floating_dropdown_menu");
+  if (!menu) {
+    menu = document.createElement("div");
+    menu.id = "gh_floating_dropdown_menu";
+    menu.className = "gh-floating-menu";
+    menu.style.display = "none";
+    document.body.appendChild(menu);
+  }
+  return menu;
+}
+
+function positionFloatingMenu(inputEl) {
+  const menu = getOrCreateFloatingMenu();
+  if (!inputEl) return;
+  const rect = inputEl.getBoundingClientRect();
+  menu.style.position = "fixed";
+  menu.style.left = rect.left + "px";
+  menu.style.width = Math.max(rect.width, 240) + "px";
+  menu.style.zIndex = "999999";
+
+  const spaceBelow = window.innerHeight - rect.bottom;
+  if (spaceBelow < 220 && rect.top > 220) {
+    menu.style.bottom = (window.innerHeight - rect.top + 4) + "px";
+    menu.style.top = "auto";
+  } else {
+    menu.style.top = (rect.bottom + 4) + "px";
+    menu.style.bottom = "auto";
+  }
+}
+
+function closeFloatingMenu() {
+  const menu = document.getElementById("gh_floating_dropdown_menu");
+  if (menu) menu.style.display = "none";
+  activeFloatingTarget = null;
+}
+
+function updateClearButton(wrap, kind, val, gidx, dkey) {
+  const inputContainer = wrap.querySelector("div[style*='position:relative']");
+  if (!inputContainer) return;
+  const existingClear = inputContainer.querySelector(".gh-btn-clear");
+  const existingSearchIcon = inputContainer.querySelector("span");
+  if (val) {
+    if (existingSearchIcon) existingSearchIcon.remove();
+    if (!existingClear) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "gh-btn-clear";
+      btn.title = "Clear";
+      btn.innerHTML = "&times;";
+      btn.dataset.clearKind = kind;
+      btn.dataset.gidx = gidx;
+      btn.dataset.dkey = dkey;
+      inputContainer.appendChild(btn);
+    }
+  } else {
+    if (existingClear) existingClear.remove();
+    if (!existingSearchIcon) {
+      const sp = document.createElement("span");
+      sp.style.cssText = "position:absolute; right:8px; top:50%; transform:translateY(-50%); pointer-events:none; font-size:11px; color:#94a3b8;";
+      sp.textContent = "🔍";
+      inputContainer.appendChild(sp);
+    }
+  }
+}
+
+function toggleDropOption(gidx, dkey, item) {
+  item = (item || "").trim();
+  if (!item) return;
+  const k = `${gidx}_${dkey}`;
+  vehicleState[k] = vehicleState[k] || {};
+  let list = getDropList(k);
+  const idx = list.findIndex(x => x.toLowerCase() === item.toLowerCase());
+  if (idx >= 0) {
+    list.splice(idx, 1);
+  } else {
+    list.push(item);
+  }
+  vehicleState[k].dl = list.join(', ');
+
+  const hiddenInp = document.querySelector(`[data-v-drop-loc][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
+  if (hiddenInp) hiddenInp.value = vehicleState[k].dl;
+
+  const wrap = document.querySelector(`[data-drop-multiselect][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
+  if (wrap) {
+    const chipsBox = wrap.querySelector(".gh-chips-box");
+    if (chipsBox) {
+      chipsBox.innerHTML = list.map(it => `
+        <span class="gh-chip" data-chip-val="${escapeHtml(it)}">
+          <span>${escapeHtml(it)}</span>
+          <button type="button" class="gh-chip-del" data-chip-remove="${escapeHtml(it)}" data-gidx="${gidx}" data-dkey="${dkey}" title="Remove">&times;</button>
+        </span>
+      `).join('');
+    }
+    const searchInp = wrap.querySelector(".gh-drop-search");
+    if (searchInp) {
+      searchInp.placeholder = list.length ? '+ Add another drop…' : '📍 Search drop destination…';
+    }
+  }
+
+  if (activeFloatingTarget && activeFloatingTarget.type === 'drop' && activeFloatingTarget.gidx === gidx && activeFloatingTarget.dkey === dkey) {
+    renderFloatingMenu();
+  }
+}
+
+function setPickupLocation(gidx, dkey, item) {
+  item = (item || "").trim();
+  const k = `${gidx}_${dkey}`;
+  vehicleState[k] = vehicleState[k] || {};
+  vehicleState[k].pl = item;
+
+  const hiddenInp = document.querySelector(`[data-v-pickup-loc][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
+  if (hiddenInp) hiddenInp.value = item;
+
+  const wrap = document.querySelector(`[data-pickup-singleselect][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
+  if (wrap) {
+    const searchInp = wrap.querySelector(".gh-pickup-search");
+    if (searchInp) searchInp.value = item;
+    updateClearButton(wrap, 'pickup', item, gidx, dkey);
+  }
+
+  closeFloatingMenu();
+}
+
+function setFoodLocation(meal, gidx, dkey, item) {
+  item = (item || "").trim();
+  const k = `${gidx}_${dkey}`;
+  foodState[k] = foodState[k] || {};
+  const mealKey = meal === 'morning' ? 'ml' : meal === 'evening' ? 'el' : 'nl';
+  foodState[k][mealKey] = item;
+
+  const hiddenInp = document.querySelector(`[data-f-${meal}-loc][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
+  if (hiddenInp) hiddenInp.value = item;
+
+  const wrap = document.querySelector(`[data-food-singleselect][data-meal="${meal}"][data-gidx="${gidx}"][data-dkey="${dkey}"]`);
+  if (wrap) {
+    const searchInp = wrap.querySelector(".gh-food-search");
+    if (searchInp) searchInp.value = item;
+    updateClearButton(wrap, meal, item, gidx, dkey);
+  }
+
+  closeFloatingMenu();
+}
+
+function renderFloatingMenu() {
+  if (!activeFloatingTarget) return;
+  const menu = getOrCreateFloatingMenu();
+  const { type, gidx, dkey, meal, inputEl } = activeFloatingTarget;
+  const q = (inputEl.value || "").trim().toLowerCase();
+  const k = `${gidx}_${dkey}`;
+
+  let html = "";
+
+  if (type === "drop") {
+    const selectedList = getDropList(k);
+    const domestic = MASTER_LOCATIONS.filter(l => (l.type || "").toLowerCase() !== "outstation");
+    const outstation = MASTER_LOCATIONS.filter(l => (l.type || "").toLowerCase() === "outstation");
+
+    function matchLoc(l) {
+      if (!q) return true;
+      return (l.name.toLowerCase().includes(q) || (l.city && l.city.toLowerCase().includes(q)) || (l.label && l.label.toLowerCase().includes(q)));
+    }
+
+    const filteredDom = domestic.filter(matchLoc);
+    const filteredOut = outstation.filter(matchLoc);
+
+    if (filteredDom.length) {
+      html += `<div class="gh-floating-optgroup">📍 Domestic / Local</div>`;
+      filteredDom.forEach(l => {
+        const isSel = selectedList.some(s => s.toLowerCase() === l.name.toLowerCase() || s.toLowerCase() === l.label.toLowerCase());
+        html += `
+          <div class="gh-floating-option ${isSel ? 'selected' : ''}" data-action="select-drop" data-val="${escapeHtml(l.name)}">
+            <div style="display:flex;align-items:center;gap:7px">
+              <input type="checkbox" style="pointer-events:none;accent-color:#0284c7" ${isSel ? 'checked' : ''}>
+              <span>${escapeHtml(l.label)}</span>
+            </div>
+            ${isSel ? '<span style="color:#0284c7;font-weight:700">✓</span>' : ''}
+          </div>
+        `;
+      });
+    }
+
+    if (filteredOut.length) {
+      html += `<div class="gh-floating-optgroup">✈️ Outstation</div>`;
+      filteredOut.forEach(l => {
+        const isSel = selectedList.some(s => s.toLowerCase() === l.name.toLowerCase() || s.toLowerCase() === l.label.toLowerCase());
+        html += `
+          <div class="gh-floating-option ${isSel ? 'selected' : ''}" data-action="select-drop" data-val="${escapeHtml(l.name)}">
+            <div style="display:flex;align-items:center;gap:7px">
+              <input type="checkbox" style="pointer-events:none;accent-color:#0284c7" ${isSel ? 'checked' : ''}>
+              <span>${escapeHtml(l.label)}</span>
+            </div>
+            ${isSel ? '<span style="color:#0284c7;font-weight:700">✓</span>' : ''}
+          </div>
+        `;
+      });
+    }
+
+    if (!filteredDom.length && !filteredOut.length && !q) {
+      html += `<div class="gh-floating-empty">No locations available</div>`;
+    }
+
+    if (q) {
+      html += `
+        <div class="gh-floating-custom" data-action="select-drop" data-val="${escapeHtml(inputEl.value.trim())}">
+          ➕ Add custom location: "<b>${escapeHtml(inputEl.value.trim())}</b>"
+        </div>
+      `;
+    }
+  } else if (type === "pickup") {
+    const curVal = (vehicleState[k]?.pl || "").trim().toLowerCase();
+    const domestic = MASTER_LOCATIONS.filter(l => (l.type || "").toLowerCase() !== "outstation");
+    const outstation = MASTER_LOCATIONS.filter(l => (l.type || "").toLowerCase() === "outstation");
+
+    function matchLoc(l) {
+      if (!q) return true;
+      return (l.name.toLowerCase().includes(q) || (l.city && l.city.toLowerCase().includes(q)) || (l.label && l.label.toLowerCase().includes(q)));
+    }
+
+    const filteredDom = domestic.filter(matchLoc);
+    const filteredOut = outstation.filter(matchLoc);
+
+    if (filteredDom.length) {
+      html += `<div class="gh-floating-optgroup">📍 Domestic / Local</div>`;
+      filteredDom.forEach(l => {
+        const isSel = (curVal && (curVal === l.name.toLowerCase() || curVal === l.label.toLowerCase()));
+        html += `
+          <div class="gh-floating-option ${isSel ? 'selected' : ''}" data-action="select-pickup" data-val="${escapeHtml(l.name)}">
+            <span>${escapeHtml(l.label)}</span>
+            ${isSel ? '<span style="color:#16a34a;font-weight:700">✓</span>' : ''}
+          </div>
+        `;
+      });
+    }
+
+    if (filteredOut.length) {
+      html += `<div class="gh-floating-optgroup">✈️ Outstation</div>`;
+      filteredOut.forEach(l => {
+        const isSel = (curVal && (curVal === l.name.toLowerCase() || curVal === l.label.toLowerCase()));
+        html += `
+          <div class="gh-floating-option ${isSel ? 'selected' : ''}" data-action="select-pickup" data-val="${escapeHtml(l.name)}">
+            <span>${escapeHtml(l.label)}</span>
+            ${isSel ? '<span style="color:#16a34a;font-weight:700">✓</span>' : ''}
+          </div>
+        `;
+      });
+    }
+
+    if (!filteredDom.length && !filteredOut.length && !q) {
+      html += `<div class="gh-floating-empty">No locations available</div>`;
+    }
+
+    if (q) {
+      html += `
+        <div class="gh-floating-custom" data-action="select-pickup" data-val="${escapeHtml(inputEl.value.trim())}">
+          ✏️ Use custom location: "<b>${escapeHtml(inputEl.value.trim())}</b>"
+        </div>
+      `;
+    }
+  } else if (type === "food") {
+    const mealKey = meal === 'morning' ? 'ml' : meal === 'evening' ? 'el' : 'nl';
+    const curVal = (foodState[k]?.[mealKey] || "").trim().toLowerCase();
+
+    const categories = {};
+    MASTER_FOOD_LOCATIONS.forEach(l => {
+      const cat = l.category || 'Dining Locations';
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push(l);
+    });
+
+    let anyFound = false;
+    Object.keys(categories).forEach(cat => {
+      const filtered = categories[cat].filter(l => {
+        if (!q) return true;
+        return (l.name.toLowerCase().includes(q) || (l.label && l.label.toLowerCase().includes(q)) || (l.description && l.description.toLowerCase().includes(q)));
+      });
+      if (filtered.length) {
+        anyFound = true;
+        html += `<div class="gh-floating-optgroup">${escapeHtml(cat)}</div>`;
+        filtered.forEach(l => {
+          const isSel = (curVal && (curVal === l.name.toLowerCase() || curVal === l.label.toLowerCase()));
+          html += `
+            <div class="gh-floating-option ${isSel ? 'selected' : ''}" data-action="select-food" data-val="${escapeHtml(l.name)}">
+              <span>${escapeHtml(l.label)}</span>
+              ${isSel ? '<span style="color:#16a34a;font-weight:700">✓</span>' : ''}
+            </div>
+          `;
+        });
+      }
+    });
+
+    if (!anyFound && !q) {
+      html += `<div class="gh-floating-empty">No dining locations available</div>`;
+    }
+
+    if (q) {
+      html += `
+        <div class="gh-floating-custom" data-action="select-food" data-val="${escapeHtml(inputEl.value.trim())}">
+          ✏️ Use custom location: "<b>${escapeHtml(inputEl.value.trim())}</b>"
+        </div>
+      `;
+    }
+  }
+
+  menu.innerHTML = html;
+  positionFloatingMenu(inputEl);
+  menu.style.display = "block";
+}
+
+// Global Event Listeners for Searchable Dropdowns & Multi-select
+document.addEventListener("focusin", (e) => {
+  if (e.target.matches(".gh-drop-search")) {
+    activeFloatingTarget = {
+      type: "drop",
+      gidx: e.target.dataset.gidx,
+      dkey: e.target.dataset.dkey,
+      inputEl: e.target
+    };
+    renderFloatingMenu();
+  } else if (e.target.matches(".gh-pickup-search")) {
+    activeFloatingTarget = {
+      type: "pickup",
+      gidx: e.target.dataset.gidx,
+      dkey: e.target.dataset.dkey,
+      inputEl: e.target
+    };
+    renderFloatingMenu();
+  } else if (e.target.matches(".gh-food-search")) {
+    activeFloatingTarget = {
+      type: "food",
+      meal: e.target.dataset.meal,
+      gidx: e.target.dataset.gidx,
+      dkey: e.target.dataset.dkey,
+      inputEl: e.target
+    };
+    renderFloatingMenu();
+  }
+});
+
+document.addEventListener("input", (e) => {
+  if (e.target.matches(".gh-drop-search, .gh-pickup-search, .gh-food-search")) {
+    renderFloatingMenu();
+  }
+});
+
+document.addEventListener("mousedown", (e) => {
+  const opt = e.target.closest(".gh-floating-option, .gh-floating-custom");
+  if (!opt) return;
+  e.preventDefault();
+  const action = opt.dataset.action;
+  const val = opt.dataset.val;
+  if (!activeFloatingTarget) return;
+  const { gidx, dkey, meal, inputEl } = activeFloatingTarget;
+
+  if (action === "select-drop") {
+    toggleDropOption(gidx, dkey, val);
+    if (inputEl) {
+      inputEl.value = "";
+      inputEl.focus();
+    }
+  } else if (action === "select-pickup") {
+    setPickupLocation(gidx, dkey, val);
+  } else if (action === "select-food") {
+    setFoodLocation(meal, gidx, dkey, val);
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.target.matches(".gh-drop-search, .gh-pickup-search, .gh-food-search")) {
+    if (e.key === "Escape") {
+      closeFloatingMenu();
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const menu = document.getElementById("gh_floating_dropdown_menu");
+      const firstOpt = menu ? menu.querySelector(".gh-floating-option, .gh-floating-custom") : null;
+      if (firstOpt) {
+        firstOpt.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+      } else if (e.target.value.trim()) {
+        const val = e.target.value.trim();
+        if (e.target.matches(".gh-drop-search")) {
+          const gidx = e.target.dataset.gidx, dkey = e.target.dataset.dkey;
+          toggleDropOption(gidx, dkey, val);
+          e.target.value = "";
+        } else if (e.target.matches(".gh-pickup-search")) {
+          const gidx = e.target.dataset.gidx, dkey = e.target.dataset.dkey;
+          setPickupLocation(gidx, dkey, val);
+        } else if (e.target.matches(".gh-food-search")) {
+          const gidx = e.target.dataset.gidx, dkey = e.target.dataset.dkey, meal = e.target.dataset.meal;
+          setFoodLocation(meal, gidx, dkey, val);
+        }
+      }
+    }
+  }
+});
+
+document.addEventListener("pointerdown", (e) => {
+  const menu = document.getElementById("gh_floating_dropdown_menu");
+  if (menu && menu.style.display !== "none") {
+    if (!menu.contains(e.target) && !e.target.closest(".gh-search-input")) {
+      closeFloatingMenu();
+    }
+  }
+});
+
+window.addEventListener("scroll", () => {
+  if (activeFloatingTarget && activeFloatingTarget.inputEl) {
+    positionFloatingMenu(activeFloatingTarget.inputEl);
+  }
+}, true);
+
+window.addEventListener("resize", () => {
+  if (activeFloatingTarget && activeFloatingTarget.inputEl) {
+    positionFloatingMenu(activeFloatingTarget.inputEl);
+  }
+});
+
+document.addEventListener("click", (e) => {
+  const clearBtn = e.target.closest(".gh-btn-clear");
+  if (clearBtn) {
+    e.stopPropagation();
+    const kind = clearBtn.dataset.clearKind;
+    const gidx = clearBtn.dataset.gidx;
+    const dkey = clearBtn.dataset.dkey;
+    if (kind === 'pickup') {
+      setPickupLocation(gidx, dkey, "");
+    } else {
+      setFoodLocation(kind, gidx, dkey, "");
+    }
+    const wrap = clearBtn.closest(".arr-loc-wrap");
+    const inp = wrap ? wrap.querySelector(".gh-search-input") : null;
+    if (inp) inp.focus();
+    return;
+  }
+
+  const chipDel = e.target.closest(".gh-chip-del");
+  if (chipDel) {
+    e.stopPropagation();
+    const item = chipDel.dataset.chipRemove;
+    const gidx = chipDel.dataset.gidx;
+    const dkey = chipDel.dataset.dkey;
+    toggleDropOption(gidx, dkey, item);
+    return;
+  }
+});
+
 </script>
 {% endblock %}
