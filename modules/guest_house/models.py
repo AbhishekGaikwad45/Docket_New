@@ -134,6 +134,46 @@ class FoodLocation(db.Model):
         return " ".join(parts)
 
 
+class Airport(db.Model):
+    __tablename__ = "gh_airports"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    code = db.Column(db.String(20))
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(100))
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+
+    def __str__(self):
+        parts = []
+        if self.code:
+            parts.append(f"{self.name} ({self.code})")
+        else:
+            parts.append(self.name)
+        if self.city:
+            parts.append(self.city)
+        return " - ".join(parts)
+
+
+class RailwayStation(db.Model):
+    __tablename__ = "gh_railway_stations"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    code = db.Column(db.String(20))
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(100))
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+
+    def __str__(self):
+        parts = []
+        if self.code:
+            parts.append(f"{self.name} ({self.code})")
+        else:
+            parts.append(self.name)
+        if self.city:
+            parts.append(self.city)
+        return " - ".join(parts)
+
+
 class GuestRequest(db.Model):
     __tablename__ = "gh_requests"
     id = db.Column(db.Integer, primary_key=True)

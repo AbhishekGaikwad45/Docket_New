@@ -17,8 +17,8 @@ from core.registry import get_setting
 from core.security import permission_required
 
 from .models import (BOOKED, EXPENSES_BY, STATUSES, STAY_TYPES, TRIP_TYPES, VISIT_TYPES,
-                     ExpenseBorneBy, Guest, GuestHouse, GuestRequest,
-                     FoodLocation, Hotel, Location, Room, Trip, Vehicle, VisitPurpose, room_board, room_conflicts, vehicle_conflicts)
+                     Airport, ExpenseBorneBy, Guest, GuestHouse, GuestRequest,
+                     FoodLocation, Hotel, Location, RailwayStation, Room, Trip, Vehicle, VisitPurpose, room_board, room_conflicts, vehicle_conflicts)
 
 CODE = "guest_house"
 bp = Blueprint(CODE, __name__, template_folder="templates")
@@ -55,6 +55,20 @@ def get_locations():
 def get_food_locations():
     try:
         return FoodLocation.query.filter_by(is_active=True).order_by(FoodLocation.name).all()
+    except Exception:
+        return []
+
+
+def get_airports():
+    try:
+        return Airport.query.filter_by(is_active=True).order_by(Airport.city, Airport.name).all()
+    except Exception:
+        return []
+
+
+def get_railway_stations():
+    try:
+        return RailwayStation.query.filter_by(is_active=True).order_by(RailwayStation.city, RailwayStation.name).all()
     except Exception:
         return []
 
@@ -333,7 +347,8 @@ def _form_page(req, errors=(), copy_of=None):
         return render_template("guest_house/request_form.html", req=req, guests=guests, chain=chain, copy_of=copy_of,
                                visit_types=vt, max_guests=get_setting(CODE, "max_guests"),
                                allow_backdated=allow_backdated, min_arrival=min_arrival, min_departure=min_departure,
-                               locations=get_locations(), food_locations=get_food_locations())
+                               locations=get_locations(), food_locations=get_food_locations(),
+                               airports=get_airports(), railway_stations=get_railway_stations())
 
 
 @bp.route("/requests/new", methods=["GET", "POST"])
@@ -824,7 +839,8 @@ def _render_arrange(req):
     return render_template("guest_house/arrange.html", req=req, rooms=rooms, busy=busy, vehicles=vehicles,
                            hotels=Hotel.query.filter_by(is_active=True).order_by(Hotel.name).all(),
                            stay_types=STAY_TYPES, trip_types=TRIP_TYPES, expenses_by=get_expenses_by(),
-                           locations=get_locations(), food_locations=get_food_locations())
+                           locations=get_locations(), food_locations=get_food_locations(),
+                           airports=get_airports(), railway_stations=get_railway_stations())
 
 
 def _read_arrangement(req):
@@ -1118,6 +1134,16 @@ MASTERS = {
         ("name", "Location / Dining name", "text", True),
         ("category", "Category", ["Plant Canteen", "Guest House Dining", "VIP Lounge", "Field Delivery / Site", "Other"], True),
         ("description", "Description / Remarks", "text", False)]),
+    "airports": (Airport, "Airports", [
+        ("name", "Airport name", "text", True),
+        ("code", "Airport code (IATA)", "text", False),
+        ("city", "City", "text", False),
+        ("state", "State", "text", False)]),
+    "railway-stations": (RailwayStation, "Railway stations", [
+        ("name", "Station name", "text", True),
+        ("code", "Station code", "text", False),
+        ("city", "City", "text", False),
+        ("state", "State", "text", False)]),
 }
 
 
