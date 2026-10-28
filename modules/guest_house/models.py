@@ -312,6 +312,8 @@ class Guest(db.Model):
     designation = db.Column(db.String(150))
     arrival = db.Column(db.DateTime, nullable=False)
     departure = db.Column(db.DateTime, nullable=False)
+    arrival_ticket = db.Column(db.String(255))
+    departure_ticket = db.Column(db.String(255))
 
     # Filled by the desk
     stay_type = db.Column(db.String(20))  # guest_house / hotel / none

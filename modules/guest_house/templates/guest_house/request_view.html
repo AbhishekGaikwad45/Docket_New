@@ -11,6 +11,9 @@
 {% if is_desk and req.status in ('approved', 'arranged') %}<a class="btn btn-primary"
   href="{{ url_for('guest_house.arrange', req_id=req.id) }}">{{ 'Update arrangement' if req.status == 'arranged' else
   'Arrange' }}</a>{% endif %}
+{% if can_cancel %}
+<a class="btn btn-bad" href="#cancel-card" onclick="document.getElementById('cancel-card')?.scrollIntoView({behavior:'smooth'}); document.querySelector('#cancel-card textarea')?.focus(); return false;">Cancel request</a>
+{% endif %}
 {% endblock %}
 {% block page %}
 <div class="grid g3">
@@ -96,6 +99,20 @@
               <td><b>{{ gst.name }}</b>{% if gst.gender %} <span class="muted small">({{ gst.gender }})</span>{% endif
                 %}<div class="small muted">{{ gst.designation or '' }}{% if gst.organisation %} · {{ gst.organisation
                   }}{% endif %}</div>
+                {% if gst.arrival_ticket or gst.departure_ticket %}
+                  <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+                    {% if gst.arrival_ticket %}
+                      <a href="{{ url_for('guest_house.download_ticket', filename=gst.arrival_ticket) }}" target="_blank" class="badge" style="background:#e0f2fe;color:#0369a1;font-size:10.5px;text-decoration:none;display:inline-flex;align-items:center;gap:3px;" title="{{ gst.arrival_ticket }}">
+                        ✈️ Arrived ticket
+                      </a>
+                    {% endif %}
+                    {% if gst.departure_ticket %}
+                      <a href="{{ url_for('guest_house.download_ticket', filename=gst.departure_ticket) }}" target="_blank" class="badge" style="background:#e0f2fe;color:#0369a1;font-size:10.5px;text-decoration:none;display:inline-flex;align-items:center;gap:3px;" title="{{ gst.departure_ticket }}">
+                        🛫 Departure ticket
+                      </a>
+                    {% endif %}
+                  </div>
+                {% endif %}
               </td>
               <td class="small">{{ gst.mobile or '' }}<div>{{ gst.email or '' }}</div>
               </td>
@@ -267,12 +284,12 @@
     </section>
 
     {% if can_cancel %}
-    <form method="post" action="{{ url_for('guest_house.cancel_request', req_id=req.id) }}" class="card">
+    <form id="cancel-card" method="post" action="{{ url_for('guest_house.cancel_request', req_id=req.id) }}" class="card" onsubmit="const b=this.querySelector('button[type=submit], button.btn-bad'); if(b){ b.disabled=true; b.textContent='Cancelling...'; }">
       <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
       <h3>Cancel request</h3>
-      <textarea name="reason" rows="2" placeholder="Reason (required)" required
+      <textarea name="reason" rows="2" placeholder="Reason for cancellation (required)" required
         aria-label="Cancellation reason"></textarea>
-      <button class="btn btn-bad" style="margin-top:8px">Cancel request</button>
+      <button type="submit" class="btn btn-bad" style="margin-top:8px">Cancel request</button>
       {% if req.status in ('approved', 'arranged') %}<p class="help">Frees allocated rooms and vehicles. The desk is
         told to cancel hotel and hired-vehicle bookings.</p>{% endif %}
     </form>
