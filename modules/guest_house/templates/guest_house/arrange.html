@@ -55,7 +55,22 @@
       {% for gst in req.guests %}{% set p = 'g' ~ gst.id ~ '_' %}
         <tr class="guest-row">
           <td><b>{{ gst.name }}</b><div class="small muted">{{ gst.gender or '' }} {{ gst.mobile or '' }}</div>
-            {% if gst.checked_out_at %}<span class="badge">checked out</span>{% elif gst.checked_in_at %}<span class="badge b-approved">in house</span>{% endif %}</td>
+            {% if gst.checked_out_at %}<span class="badge">checked out</span>{% elif gst.checked_in_at %}<span class="badge b-approved">in house</span>{% endif %}
+            {% if gst.arrival_ticket or gst.departure_ticket %}
+              <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+                {% if gst.arrival_ticket %}
+                  <a href="{{ url_for('guest_house.download_ticket', filename=gst.arrival_ticket) }}" target="_blank" class="badge" style="background:#e0f2fe;color:#0369a1;font-size:10.5px;text-decoration:none;display:inline-flex;align-items:center;gap:3px;" title="{{ gst.arrival_ticket }}">
+                    ✈️ Arrived ticket
+                  </a>
+                {% endif %}
+                {% if gst.departure_ticket %}
+                  <a href="{{ url_for('guest_house.download_ticket', filename=gst.departure_ticket) }}" target="_blank" class="badge" style="background:#e0f2fe;color:#0369a1;font-size:10.5px;text-decoration:none;display:inline-flex;align-items:center;gap:3px;" title="{{ gst.departure_ticket }}">
+                    🛫 Departure ticket
+                  </a>
+                {% endif %}
+              </div>
+            {% endif %}
+          </td>
           <td><input type="datetime-local" name="{{ p }}arrival" value="{{ dtl(gst.arrival) }}" {{ 'readonly' if gst.checked_in_at }} aria-label="Arrival">
             <input type="datetime-local" name="{{ p }}departure" value="{{ dtl(gst.departure) }}" style="margin-top:4px" aria-label="Departure"></td>
           <td><select name="{{ p }}stay_type" data-switch=".guest-row" aria-label="Stay type"><option value="">- choose -</option>

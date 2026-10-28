@@ -26,7 +26,37 @@
 {% macro guest_row(gst) %}
   <tr data-row>
     <td class="rownum muted"></td>
-    <td><input type="text" name="g_name" value="{{ gst.name or '' }}" aria-label="Guest name" required></td>
+    <td style="min-width:360px;vertical-align:top;">
+      <input type="text" name="g_name" value="{{ gst.name or '' }}" aria-label="Guest name" required style="width:100%;box-sizing:border-box;">
+      <div class="guest-ticket-uploads" style="display:flex;flex-direction:row;align-items:center;gap:8px;margin-top:6px;flex-wrap:nowrap;">
+        <div class="ticket-upload-btn-wrap" style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">
+          <input type="hidden" name="g_arrival_ticket_existing" value="{{ gst.arrival_ticket or '' }}">
+          <label class="btn btn-xs ticket-upload-btn" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;background:{{ '#f0fdf4' if gst.arrival_ticket else '#f8fafc' }};border:1px solid {{ '#86efac' if gst.arrival_ticket else '#cbd5e1' }};border-radius:4px;color:{{ '#166534' if gst.arrival_ticket else '#334155' }};cursor:pointer;white-space:nowrap;line-height:1.2;margin:0;" title="Upload arrived travel ticket">
+            <input type="file" name="g_arrival_ticket" class="ticket-file-input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;" onchange="handleTicketFileSelect(this, 'Arrived')">
+            <span class="upload-label">Upload Arrived travel ticket</span>
+          </label>
+          {% if gst.arrival_ticket %}
+            <span class="ticket-file-badge" style="display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:#0284c7;background:#e0f2fe;padding:2px 6px;border-radius:3px;" title="{{ gst.arrival_ticket }}">
+              <a href="{{ url_for('guest_house.download_ticket', filename=gst.arrival_ticket) }}" target="_blank" style="color:inherit;text-decoration:none;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;">✓ {{ gst.arrival_ticket.split('_', 2)[-1] if '_' in gst.arrival_ticket else gst.arrival_ticket }}</a>
+              <button type="button" onclick="clearTicketFile(this)" style="border:none;background:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0;line-height:1;" title="Remove ticket">&times;</button>
+            </span>
+          {% endif %}
+        </div>
+        <div class="ticket-upload-btn-wrap" style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">
+          <input type="hidden" name="g_departure_ticket_existing" value="{{ gst.departure_ticket or '' }}">
+          <label class="btn btn-xs ticket-upload-btn" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;background:{{ '#f0fdf4' if gst.departure_ticket else '#f8fafc' }};border:1px solid {{ '#86efac' if gst.departure_ticket else '#cbd5e1' }};border-radius:4px;color:{{ '#166534' if gst.departure_ticket else '#334155' }};cursor:pointer;white-space:nowrap;line-height:1.2;margin:0;" title="Upload departure travel ticket">
+            <input type="file" name="g_departure_ticket" class="ticket-file-input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;" onchange="handleTicketFileSelect(this, 'Departure')">
+            <span class="upload-label">Upload Departure travel ticket</span>
+          </label>
+          {% if gst.departure_ticket %}
+            <span class="ticket-file-badge" style="display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:#0284c7;background:#e0f2fe;padding:2px 6px;border-radius:3px;" title="{{ gst.departure_ticket }}">
+              <a href="{{ url_for('guest_house.download_ticket', filename=gst.departure_ticket) }}" target="_blank" style="color:inherit;text-decoration:none;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;">✓ {{ gst.departure_ticket.split('_', 2)[-1] if '_' in gst.departure_ticket else gst.departure_ticket }}</a>
+              <button type="button" onclick="clearTicketFile(this)" style="border:none;background:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0;line-height:1;" title="Remove ticket">&times;</button>
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </td>
     <td><select name="g_gender" aria-label="Gender" style="min-width:90px">{% for x in ['', 'Male', 'Female', 'Other'] %}<option {{ 'selected' if (gst.gender or '') == x }}>{{ x }}</option>{% endfor %}</select></td>
     <td><input type="tel" name="g_mobile" value="{{ gst.mobile or '' }}" aria-label="Mobile" placeholder="10-digit mobile" pattern="(\+?\d{1,4}[- ]?)?[0-9]{10}" title="Please enter a valid 10-digit mobile number"></td>
     <td><input type="email" name="g_email" value="{{ gst.email or '' }}" aria-label="Email" placeholder="guest@example.com" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address"></td>
@@ -272,6 +302,120 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
+/* Custom Searchable Select Dropdown */
+.gh-searchable-select {
+  position: relative;
+  width: 100%;
+}
+.gh-select-trigger {
+  width: 100%;
+  height: 36px;
+  padding: 6px 30px 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  background: #ffffff;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  position: relative;
+  user-select: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.gh-select-trigger:focus, .gh-select-trigger.is-open {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+  outline: none;
+}
+.gh-select-trigger-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.gh-select-trigger-text.placeholder {
+  color: #94a3b8;
+}
+.gh-select-caret {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 9px;
+  color: #64748b;
+  transition: transform 0.2s ease;
+}
+.gh-select-trigger.is-open .gh-select-caret {
+  transform: translateY(-50%) rotate(180deg);
+}
+.gh-select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 999999;
+  display: none;
+  overflow: hidden;
+}
+.gh-select-dropdown.is-open {
+  display: block;
+}
+.gh-select-search-box {
+  padding: 6px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+.gh-select-search-input {
+  width: 100%;
+  height: 32px;
+  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 12.5px;
+  outline: none;
+  box-sizing: border-box;
+}
+.gh-select-search-input:focus {
+  border-color: #0284c7;
+}
+.gh-select-options-list {
+  max-height: 220px;
+  overflow-y: auto;
+}
+.gh-select-option-item {
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: #1e293b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.gh-select-option-item:hover, .gh-select-option-item.is-highlighted {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.gh-select-option-item.is-selected {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+.gh-select-no-results {
+  padding: 10px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12px;
+  font-style: italic;
+}
+
 /* Searchable Multi-Select & Chips */
 .gh-chips-box {
   display: flex;
@@ -498,7 +642,7 @@
 }
 </style>
 {% if copy_of %}<div class="flash flash-info">Copied from {{ copy_of.req_no }} - set the new dates for each guest.</div>{% endif %}
-<form method="post" class="stack" novalidate>
+<form method="post" class="stack" novalidate enctype="multipart/form-data">
   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
 
   <section class="card">
@@ -519,7 +663,7 @@
       <div class="row"><button type="button" class="btn btn-sm" id="copyDates" title="Fill empty dates from guest 1">Copy guest 1 dates to all</button>
         <button type="button" class="btn btn-sm btn-primary" data-add>+ Add guest</button></div></div>
     <div class="tbl-wrap"><table class="tbl compact">
-      <thead><tr><th>#</th><th class="req">Name</th><th>Gender</th><th>Mobile</th><th>Email</th><th>Organisation</th><th>Designation</th><th class="req">Arrival</th><th class="req">Departure</th><th></th></tr></thead>
+      <thead><tr><th>#</th><th class="req" style="min-width:360px">Name</th><th>Gender</th><th>Mobile</th><th>Email</th><th>Organisation</th><th>Designation</th><th class="req">Arrival</th><th class="req">Departure</th><th></th></tr></thead>
       <tbody data-rows>{% for gst in guests %}{{ guest_row(gst) }}{% endfor %}</tbody>
     </table></div>
     <template>{{ guest_row({}) }}</template>
@@ -589,7 +733,7 @@
         <div class="arr-card" style="max-width:840px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px">
           <div style="display:grid;grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; align-items:start">
             <div>
-              <label for="travel_mode" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">Travel Mode <span class="req" style="color:#dc2626"></span></label>
+              <label for="travel_mode" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">Travel Mode <span style="color:#dc2626">*</span></label>
               <select id="travel_mode" name="travel_mode" aria-label="Travel mode" onchange="updateTicketLocationLists()" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
                 <option value="">Select travel mode…</option>
                 <option value="Flight">Flight / Air</option>
@@ -598,7 +742,7 @@
               </select>
             </div>
             <div>
-              <label id="ticket_from_label" for="ticket_from_flight" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">From <span class="req" style="color:#dc2626"></span></label>
+              <label id="ticket_from_label" for="ticket_from_flight" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">From (Airport) <span style="color:#dc2626">*</span></label>
               <select id="ticket_from_flight" aria-label="Departure Airport" onchange="onTicketLocChange('from')" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
                 <option value="">Select departure airport…</option>
                 {% for apt in airports %}
@@ -620,7 +764,7 @@
               <input type="hidden" id="ticket_from" name="ticket_from" value="">
             </div>
             <div>
-              <label id="ticket_to_label" for="ticket_to_flight" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">To <span class="req" style="color:#dc2626"></span></label>
+              <label id="ticket_to_label" for="ticket_to_flight" style="font-size:12px;font-weight:600;color:#334155;margin-bottom:4px;display:block">To (Airport) <span style="color:#dc2626">*</span></label>
               <select id="ticket_to_flight" aria-label="Arrival Airport" onchange="onTicketLocChange('to')" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;font-size:13px;box-sizing:border-box">
                 <option value="">Select arrival airport…</option>
                 {% for apt in airports %}
@@ -673,7 +817,7 @@
   </section>
 
   <div class="row"><button class="btn btn-primary">{{ 'Resubmit' if req.id else 'Submit request' }}</button>
-    <a class="btn" href="{{ url_for('guest_house.my_requests') }}">Cancel</a></div>
+    <a class="btn" href="{{ url_for('guest_house.request_view', req_id=req.id) if req.id else url_for('guest_house.my_requests') }}">Cancel</a></div>
 </form>
 {% endblock %}
 {% block scripts %}
@@ -1945,8 +2089,8 @@ if (reqForm) {
     }
 
     // 0. Validate Guest Mobile and Email
-    const gMobileInps = form.querySelectorAll("input[name='g_mobile']");
-    const gEmailInps = form.querySelectorAll("input[name='g_email']");
+    const gMobileInps = reqForm.querySelectorAll("input[name='g_mobile']");
+    const gEmailInps = reqForm.querySelectorAll("input[name='g_email']");
     const phoneRe = /^(\+?\d{1,4}[- ]?)?[0-9]{10}$/;
     const emailRe = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
 
@@ -2103,6 +2247,24 @@ function setTicketLocValue(which, val) {
   }
 
   if (hiddenInp) hiddenInp.value = val;
+    // Sync searchable select trigger displays
+    ['ticket_from_flight', 'ticket_to_flight', 'ticket_from_rail', 'ticket_to_rail'].forEach(id => {
+      const s = document.getElementById(id);
+      const w = document.querySelector(`.gh-searchable-select[data-for="${id}"]`);
+      if (s && w) {
+        const txt = w.querySelector(".gh-select-trigger-text");
+        if (txt) {
+          const idx = s.selectedIndex;
+          if (idx > 0 && s.options[idx]) {
+            txt.textContent = s.options[idx].text;
+            txt.classList.remove("placeholder");
+          } else if (idx === 0 && s.options[0]) {
+            txt.textContent = s.options[0].text;
+            txt.classList.add("placeholder");
+          }
+        }
+      }
+    });
 }
 
 function updateTicketLocationLists() {
@@ -2120,21 +2282,28 @@ function updateTicketLocationLists() {
   const fromOther = document.getElementById("ticket_from_other");
   const toOther = document.getElementById("ticket_to_other");
 
-  // Hide all first
+  // Hide all native inputs
   [fromFlight, toFlight, fromRail, toRail, fromBus, toBus].forEach(el => {
     if (el) el.style.display = "none";
   });
 
+  // Hide all searchable dropdown wrappers
+  document.querySelectorAll(".gh-searchable-select").forEach(w => {
+    w.style.display = "none";
+  });
+
   if (mode === "Rail") {
-    if (fromRail) fromRail.style.display = "block";
-    if (toRail) toRail.style.display = "block";
+    const fromRailWrap = document.querySelector('.gh-searchable-select[data-for="ticket_from_rail"]');
+    const toRailWrap = document.querySelector('.gh-searchable-select[data-for="ticket_to_rail"]');
+    if (fromRailWrap) fromRailWrap.style.display = "block"; else if (fromRail) fromRail.style.display = "block";
+    if (toRailWrap) toRailWrap.style.display = "block"; else if (toRail) toRail.style.display = "block";
     if (fromLbl) {
       fromLbl.setAttribute("for", "ticket_from_rail");
-      fromLbl.innerHTML = 'From (Railway station) <span class="req" style="color:#dc2626">*</span>';
+      fromLbl.innerHTML = 'From (Station) <span style="color:#dc2626">*</span>';
     }
     if (toLbl) {
       toLbl.setAttribute("for", "ticket_to_rail");
-      toLbl.innerHTML = 'To (Railway station) <span class="req" style="color:#dc2626">*</span>';
+      toLbl.innerHTML = 'To (Station) <span style="color:#dc2626">*</span>';
     }
     onTicketLocChange('from');
     onTicketLocChange('to');
@@ -2143,11 +2312,11 @@ function updateTicketLocationLists() {
     if (toBus) toBus.style.display = "block";
     if (fromLbl) {
       fromLbl.setAttribute("for", "ticket_from_bus");
-      fromLbl.innerHTML = 'From <span class="req" style="color:#dc2626">*</span>';
+      fromLbl.innerHTML = 'From <span style="color:#dc2626">*</span>';
     }
     if (toLbl) {
       toLbl.setAttribute("for", "ticket_to_bus");
-      toLbl.innerHTML = 'To <span class="req" style="color:#dc2626">*</span>';
+      toLbl.innerHTML = 'To <span style="color:#dc2626">*</span>';
     }
     if (fromOther) fromOther.style.display = "none";
     if (toOther) toOther.style.display = "none";
@@ -2155,22 +2324,198 @@ function updateTicketLocationLists() {
     onTicketLocChange('to');
   } else {
     // Flight or default
-    if (fromFlight) fromFlight.style.display = "block";
-    if (toFlight) toFlight.style.display = "block";
+    const fromFlightWrap = document.querySelector('.gh-searchable-select[data-for="ticket_from_flight"]');
+    const toFlightWrap = document.querySelector('.gh-searchable-select[data-for="ticket_to_flight"]');
+    if (fromFlightWrap) fromFlightWrap.style.display = "block"; else if (fromFlight) fromFlight.style.display = "block";
+    if (toFlightWrap) toFlightWrap.style.display = "block"; else if (toFlight) toFlight.style.display = "block";
     if (fromLbl) {
       fromLbl.setAttribute("for", "ticket_from_flight");
-      fromLbl.innerHTML = 'From (Airport) <span class="req" style="color:#dc2626">*</span>';
+      fromLbl.innerHTML = 'From (Airport) <span style="color:#dc2626">*</span>';
     }
     if (toLbl) {
       toLbl.setAttribute("for", "ticket_to_flight");
-      toLbl.innerHTML = 'To (Airport) <span class="req" style="color:#dc2626">*</span>';
+      toLbl.innerHTML = 'To (Airport) <span style="color:#dc2626">*</span>';
     }
     onTicketLocChange('from');
     onTicketLocChange('to');
   }
 }
 
+
+// ========================================================
+// SEARCHABLE DROPDOWN ENGINE FOR SELECT ELEMENTS
+// ========================================================
+function initSearchableSelect(selectId, searchPlaceholder) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+
+  const oldWrap = document.querySelector(`.gh-searchable-select[data-for="${selectId}"]`);
+  if (oldWrap) oldWrap.remove();
+
+  sel.style.display = "none";
+
+  const wrap = document.createElement("div");
+  wrap.className = "gh-searchable-select";
+  wrap.setAttribute("data-for", selectId);
+
+  const defaultOption = sel.options[0];
+  const initialText = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : (defaultOption ? defaultOption.text : "Select…");
+  const isPlaceholder = sel.selectedIndex <= 0;
+
+  wrap.innerHTML = `
+    <button type="button" class="gh-select-trigger" tabindex="0">
+      <span class="gh-select-trigger-text ${isPlaceholder ? 'placeholder' : ''}">${escapeHtml(initialText)}</span>
+      <span class="gh-select-caret">▼</span>
+    </button>
+    <div class="gh-select-dropdown">
+      <div class="gh-select-search-box">
+        <input type="text" class="gh-select-search-input" placeholder="${escapeHtml(searchPlaceholder || '🔍 Type to search…')}" autocomplete="off">
+      </div>
+      <div class="gh-select-options-list"></div>
+    </div>
+  `;
+
+  sel.parentNode.insertBefore(wrap, sel.nextSibling);
+
+  const trigger = wrap.querySelector(".gh-select-trigger");
+  const triggerText = wrap.querySelector(".gh-select-trigger-text");
+  const dropdown = wrap.querySelector(".gh-select-dropdown");
+  const searchInput = wrap.querySelector(".gh-select-search-input");
+  const optionsList = wrap.querySelector(".gh-select-options-list");
+
+  function renderOptions(filterText = "") {
+    const q = filterText.toLowerCase().trim();
+    let html = "";
+    let matchCount = 0;
+
+    for (let i = 0; i < sel.options.length; i++) {
+      const opt = sel.options[i];
+      const optVal = opt.value;
+      const optText = opt.text;
+      const isSelected = sel.selectedIndex === i;
+
+      if (!q || optText.toLowerCase().includes(q) || optVal.toLowerCase().includes(q)) {
+        matchCount++;
+        html += `
+          <div class="gh-select-option-item ${isSelected ? 'is-selected' : ''}" data-index="${i}" data-value="${escapeHtml(optVal)}">
+            <span>${escapeHtml(optText)}</span>
+            ${isSelected ? '<span style="color:#1d4ed8;font-weight:700">✓</span>' : ''}
+          </div>
+        `;
+      }
+    }
+
+    if (matchCount === 0) {
+      html = `<div class="gh-select-no-results">No matching options found</div>`;
+    }
+    optionsList.innerHTML = html;
+  }
+
+  function openDropdown() {
+    document.querySelectorAll(".gh-select-dropdown.is-open").forEach(d => {
+      d.classList.remove("is-open");
+      const p = d.closest(".gh-searchable-select");
+      if (p) p.querySelector(".gh-select-trigger")?.classList.remove("is-open");
+    });
+
+    renderOptions("");
+    searchInput.value = "";
+    dropdown.classList.add("is-open");
+    trigger.classList.add("is-open");
+    setTimeout(() => searchInput.focus(), 30);
+  }
+
+  function closeDropdown() {
+    dropdown.classList.remove("is-open");
+    trigger.classList.remove("is-open");
+  }
+
+  trigger.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dropdown.classList.contains("is-open")) {
+      closeDropdown();
+    } else {
+      openDropdown();
+    }
+  });
+
+  trigger.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+      e.preventDefault();
+      openDropdown();
+    }
+  });
+
+  searchInput.addEventListener("input", () => {
+    renderOptions(searchInput.value);
+  });
+
+  searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeDropdown();
+      trigger.focus();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const firstOpt = optionsList.querySelector(".gh-select-option-item");
+      if (firstOpt) {
+        firstOpt.click();
+      }
+    }
+  });
+
+  optionsList.addEventListener("click", (e) => {
+    const item = e.target.closest(".gh-select-option-item");
+    if (!item) return;
+    const idx = parseInt(item.dataset.index, 10);
+    sel.selectedIndex = idx;
+
+    triggerText.textContent = sel.options[idx].text;
+    if (idx === 0) {
+      triggerText.classList.add("placeholder");
+    } else {
+      triggerText.classList.remove("placeholder");
+    }
+
+    closeDropdown();
+    trigger.focus();
+
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  sel.addEventListener("change", () => {
+    const idx = sel.selectedIndex;
+    if (idx >= 0 && sel.options[idx]) {
+      triggerText.textContent = sel.options[idx].text;
+      if (idx === 0) {
+        triggerText.classList.add("placeholder");
+      } else {
+        triggerText.classList.remove("placeholder");
+      }
+    }
+  });
+}
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".gh-searchable-select")) {
+    document.querySelectorAll(".gh-select-dropdown.is-open").forEach(d => {
+      d.classList.remove("is-open");
+      const p = d.closest(".gh-searchable-select");
+      if (p) p.querySelector(".gh-select-trigger")?.classList.remove("is-open");
+    });
+  }
+});
+
+function syncSearchableSelects() {
+  initSearchableSelect("ticket_from_flight", "🔍 Search departure airport (e.g. BOM, Mumbai)…");
+  initSearchableSelect("ticket_to_flight", "🔍 Search arrival airport (e.g. DEL, Delhi)…");
+  initSearchableSelect("ticket_from_rail", "🔍 Search departure station (e.g. CSMT, Mumbai)…");
+  initSearchableSelect("ticket_to_rail", "🔍 Search arrival station (e.g. NDLS, Delhi)…");
+}
+
+
 // Initial render and visibility
+syncSearchableSelects();
 updateArrangementsVisibility();
 renderDailyArrangements();
 updateRequirementsState();
@@ -2627,6 +2972,71 @@ document.addEventListener("click", (e) => {
     return;
   }
 });
+
+
+// ==========================================
+// GUEST TRAVEL TICKET FILE UPLOAD HANDLERS
+// ==========================================
+function triggerTicketUpload(el) {
+  const wrap = el.closest('.ticket-upload-btn-wrap');
+  if (wrap) {
+    const inp = wrap.querySelector('input[type="file"]');
+    if (inp) inp.click();
+  }
+}
+
+function handleTicketFileSelect(inp, typeLabel) {
+  const wrap = inp.closest('.ticket-upload-btn-wrap');
+  if (!wrap) return;
+  const btn = wrap.querySelector('.ticket-upload-btn');
+  let badge = wrap.querySelector('.ticket-file-badge');
+  if (inp.files && inp.files[0]) {
+    const file = inp.files[0];
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'ticket-file-badge';
+      badge.style.cssText = 'display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:#15803d;background:#dcfce7;padding:2px 6px;border-radius:3px;';
+      wrap.appendChild(badge);
+    } else {
+      badge.style.color = '#15803d';
+      badge.style.background = '#dcfce7';
+    }
+    const shortName = file.name.length > 18 ? file.name.substring(0, 15) + '…' : file.name;
+    badge.innerHTML = `
+      <span title="${escapeHtml(file.name)}" style="display:inline-block;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">✓ ${escapeHtml(shortName)}</span>
+      <button type="button" onclick="clearTicketFile(this)" style="border:none;background:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0;line-height:1;" title="Remove file">&times;</button>
+    `;
+    if (btn) {
+      btn.style.borderColor = '#86efac';
+      btn.style.background = '#f0fdf4';
+      btn.style.color = '#166534';
+      const lbl = btn.querySelector('.upload-label');
+      if (lbl) lbl.textContent = 'Change ' + typeLabel + ' ticket';
+    }
+  }
+}
+
+function clearTicketFile(btn) {
+  const wrap = btn.closest('.ticket-upload-btn-wrap');
+  if (!wrap) return;
+  const inp = wrap.querySelector('input[type=file]');
+  const hiddenInp = wrap.querySelector('input[type=hidden]');
+  const uploadBtn = wrap.querySelector('.ticket-upload-btn');
+  const badge = wrap.querySelector('.ticket-file-badge');
+  if (inp) inp.value = '';
+  if (hiddenInp) hiddenInp.value = '';
+  if (badge) badge.remove();
+  if (uploadBtn) {
+    uploadBtn.style.borderColor = '#cbd5e1';
+    uploadBtn.style.background = '#f8fafc';
+    uploadBtn.style.color = '#334155';
+    const lbl = uploadBtn.querySelector('.upload-label');
+    if (lbl) {
+      const isArr = uploadBtn.title && uploadBtn.title.toLowerCase().includes('arrived');
+      lbl.textContent = isArr ? 'Upload Arrived travel ticket' : 'Upload Departure travel ticket';
+    }
+  }
+}
 
 </script>
 {% endblock %}

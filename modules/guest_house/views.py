@@ -1,9 +1,12 @@
+import os
+import json
 import re
 import csv
 import io
 from datetime import date, datetime, timedelta
 
-from flask import Blueprint, Response, abort, flash, g, redirect, render_template, request, url_for
+from pathlib import Path
+from flask import Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, url_for
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
@@ -169,6 +172,14 @@ def index():
     return redirect(url_for("guest_house.my_requests"))
 
 
+@bp.route("/tickets/<path:filename>")
+@P("use", "desk", "reports", "masters")
+def download_ticket(filename):
+    from flask import send_from_directory
+    upload_dir = Path(current_app.instance_path) / "uploads" / "tickets"
+    return send_from_directory(upload_dir, filename)
+
+
 @bp.get("/requests")
 @P("use")
 def my_requests():
@@ -222,6 +233,19 @@ def _read_form_fields(req):
     earliest = None if get_setting(CODE, "allow_backdated") else \
         now + timedelta(hours=get_setting(CODE, "min_notice_hours"))
     max_days = get_setting(CODE, "max_stay_days")
+    upload_tickets_dir = Path(current_app.instance_path) / "uploads" / "tickets"
+    upload_tickets_dir.mkdir(parents=True, exist_ok=True)
+    arr_files = request.files.getlist("g_arrival_ticket")
+    dep_files = request.files.getlist("g_departure_ticket")
+    arr_existing = f.getlist("g_arrival_ticket_existing")
+    dep_existing = f.getlist("g_departure_ticket_existing")
+    print(f"[TICKET UPLOAD DEBUG] request.files keys={list(request.files.keys())}, arr_files={[x.filename for x in arr_files]}, dep_files={[x.filename for x in dep_files]}", flush=True)
+    try:
+        with open(Path(current_app.instance_path) / "debug_upload.log", "a", encoding="utf-8") as f_log:
+            f_log.write(f"[{datetime.now()}] FILES: {list(request.files.keys())} | arr: {[x.filename for x in arr_files]} | dep: {[x.filename for x in dep_files]} | form keys: {list(f.keys())}\n")
+    except Exception as e:
+        pass
+
     cols = ["g_name", "g_gender", "g_mobile", "g_email", "g_org", "g_designation", "g_arrival", "g_departure"]
     rows = list(zip(*(f.getlist(c) for c in cols)))
     req.guests = []
@@ -231,6 +255,31 @@ def _read_form_fields(req):
         guest = Guest(name=name.strip(), gender=gender, mobile=mobile.strip(), email=email.strip().lower(),
                       organisation=org.strip() or req.organisation, designation=desig.strip(),
                       arrival=_parse_dt(arr), departure=_parse_dt(dep))
+
+        idx = n - 1
+        from werkzeug.utils import secure_filename
+        import uuid
+
+        # Handle arrived ticket upload
+        arr_file = arr_files[idx] if idx < len(arr_files) else None
+        if arr_file and arr_file.filename:
+            safe_name = secure_filename(arr_file.filename) or "ticket.pdf"
+            unique_name = f"arr_{uuid.uuid4().hex[:8]}_{safe_name}"
+            arr_file.save(upload_tickets_dir / unique_name)
+            guest.arrival_ticket = unique_name
+        elif idx < len(arr_existing) and arr_existing[idx]:
+            guest.arrival_ticket = arr_existing[idx].strip()
+
+        # Handle departure ticket upload
+        dep_file = dep_files[idx] if idx < len(dep_files) else None
+        if dep_file and dep_file.filename:
+            safe_name = secure_filename(dep_file.filename) or "ticket.pdf"
+            unique_name = f"dep_{uuid.uuid4().hex[:8]}_{safe_name}"
+            dep_file.save(upload_tickets_dir / unique_name)
+            guest.departure_ticket = unique_name
+        elif idx < len(dep_existing) and dep_existing[idx]:
+            guest.departure_ticket = dep_existing[idx].strip()
+
         req.guests.append(guest)
         label = f"Guest {n}"
         if not guest.name:
@@ -464,15 +513,22 @@ def decide(req_id):
 def _can_cancel(req):
     if req.status not in ("pending", "returned", "approved", "arranged") or req.anyone_checked_in:
         return False
-    return req.applicant_id == g.user.employee_id or can(g.user, CODE, "desk")
+    return req.applicant_id == g.user.employee_id or can(g.user, CODE, "desk") or can(g.user, CODE, "admin") or getattr(g.user, "is_superadmin", False)
 
 
 @bp.post("/requests/<int:req_id>/cancel")
 def cancel_request(req_id):
     req = _get(req_id)
-    reason = request.form.get("reason", "").strip()
+    if req.status == "cancelled":
+        flash(f"{req.req_no} is already cancelled.", "info")
+        return redirect(url_for("guest_house.request_view", req_id=req.id))
     if not _can_cancel(req):
-        abort(403)
+        if req.anyone_checked_in:
+            flash("Cannot cancel: one or more guests have already checked in.", "error")
+        else:
+            flash("You do not have permission to cancel this request or its current status cannot be cancelled.", "error")
+        return redirect(url_for("guest_house.request_view", req_id=req.id))
+    reason = request.form.get("reason", "").strip()
     if not reason:
         flash("Give a reason for cancelling.", "error")
         return redirect(url_for("guest_house.request_view", req_id=req.id))
@@ -1147,11 +1203,122 @@ MASTERS = {
 }
 
 
+
+def load_all_india_airports():
+    data_file = os.path.join(os.path.dirname(__file__), "data", "india_airports.json")
+    if not os.path.exists(data_file):
+        return 0, 0
+    with open(data_file, "r", encoding="utf-8") as f:
+        airports_data = json.load(f)
+
+    existing = {(a.code or "").upper().strip(): a for a in Airport.query.all() if a.code}
+    existing_by_name = {a.name.lower().strip(): a for a in Airport.query.all()}
+
+    added = 0
+    updated = 0
+    for item in airports_data:
+        code = (item.get("code") or "").upper().strip()
+        name = (item.get("name") or "").strip()
+        city = (item.get("city") or "").strip() or None
+        state = (item.get("state") or "").strip() or None
+
+        target = existing.get(code) or existing_by_name.get(name.lower())
+        if target:
+            changed = False
+            if target.name != name:
+                target.name = name
+                changed = True
+            if code and target.code != code:
+                target.code = code
+                changed = True
+            if city and target.city != city:
+                target.city = city
+                changed = True
+            if state and target.state != state:
+                target.state = state
+                changed = True
+            if not target.is_active:
+                target.is_active = True
+                changed = True
+            if changed:
+                updated += 1
+        else:
+            apt = Airport(name=name, code=code or None, city=city, state=state, is_active=True)
+            db.session.add(apt)
+            if code:
+                existing[code] = apt
+            existing_by_name[name.lower()] = apt
+            added += 1
+
+    db.session.commit()
+    return added, updated
+
+
+def load_all_india_railway_stations():
+    data_file = os.path.join(os.path.dirname(__file__), "data", "india_railway_stations.json")
+    if not os.path.exists(data_file):
+        return 0, 0
+    with open(data_file, "r", encoding="utf-8") as f:
+        stations_data = json.load(f)
+
+    existing = {(s.code or "").upper().strip(): s for s in RailwayStation.query.all() if s.code}
+    existing_by_name = {s.name.lower().strip(): s for s in RailwayStation.query.all()}
+
+    added = 0
+    updated = 0
+    for item in stations_data:
+        code = (item.get("code") or "").upper().strip()
+        name = (item.get("name") or "").strip()
+        city = (item.get("city") or "").strip() or None
+        state = (item.get("state") or "").strip() or None
+
+        target = existing.get(code) or existing_by_name.get(name.lower())
+        if target:
+            changed = False
+            if target.name != name:
+                target.name = name
+                changed = True
+            if code and target.code != code:
+                target.code = code
+                changed = True
+            if city and target.city != city:
+                target.city = city
+                changed = True
+            if state and target.state != state:
+                target.state = state
+                changed = True
+            if not target.is_active:
+                target.is_active = True
+                changed = True
+            if changed:
+                updated += 1
+        else:
+            rst = RailwayStation(name=name, code=code or None, city=city, state=state, is_active=True)
+            db.session.add(rst)
+            if code:
+                existing[code] = rst
+            existing_by_name[name.lower()] = rst
+            added += 1
+
+    db.session.commit()
+    return added, updated
+
+
 @bp.route("/masters/<kind>", methods=["GET", "POST"])
 @P("masters")
 def masters(kind):
     model, title, fields = MASTERS.get(kind) or MASTERS.get(kind.replace('_', '-')) or abort(404)
     if request.method == "POST":
+        action = (request.form.get("action") or "").strip()
+        if action == "load_all_india" or "load_all_india" in request.form:
+            if kind == "airports":
+                added, updated = load_all_india_airports()
+                flash(f"Successfully loaded All-India Airports Master ({added} new airports added, {updated} updated).", "success")
+            elif kind == "railway-stations":
+                added, updated = load_all_india_railway_stations()
+                flash(f"Successfully loaded All-India Railway Stations Master ({added} new stations added, {updated} updated).", "success")
+            return redirect(url_for("guest_house.masters", kind=kind))
+
         item = db.session.get(model, request.form.get("id", type=int) or 0) or model()
         if request.form.get("action") == "toggle":
             item.is_active = not item.is_active

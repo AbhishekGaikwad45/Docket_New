@@ -1,0 +1,788 @@
+[
+  {
+    "name": "Indira Gandhi International Airport",
+    "code": "DEL",
+    "city": "New Delhi",
+    "state": "Delhi"
+  },
+  {
+    "name": "Hindon Airport",
+    "code": "HDO",
+    "city": "Ghaziabad",
+    "state": "Uttar Pradesh"
+  },
+  {
+    "name": "Noida International Airport (Jewar)",
+    "code": "DXN",
+    "city": "Noida / Jewar",
+    "state": "Uttar Pradesh"
+  },
+  {
+    "name": "Chhatrapati Shivaji Maharaj International Airport",
+    "code": "BOM",
+    "city": "Mumbai",
+    "state": "Maharashtra"
+  },
+  {
+    "name": "Pune International Airport",
+    "code": "PNQ",
+    "city": "Pune",
+    "state": "Maharashtra"
+  },
+  {
+    "name": "Dr. Babasaheb Ambedkar International Airport",
+    "code": "NAG",
+    "city": "Nagpur",
+    "state": "Maharashtra"
+  },
+  {
+    "name": "Shirdi Airport",
+    "code": "SAG",
+    "city": "Shirdi",
+    "state": "Maharashtra"
+  },
+  {
+    "name": "Chhatrapati Sambhajinagar Airport (Aurangabad)",
+    "code": "IXU",
+    "city": "Chhatrapati Sambhajinagar",
+    "state": "Maharashtra"
+  },
+  {
+    "name": "Chhatrapati Rajaram Maharaj Airport (Kolhapur)",
+    "code": "KLH",
+    "city": "Kolhapur",
+    "state": "Maharashtra"
+  },
+  {
+    "name": "Shri Guru Gobind Singh Ji Airport",
+    "code": "NDC",
+    "city": "Nanded",
+    "state": "Maharashtra"
+  },
+  {
+    "name": "Nashik Airport (Ozar)",
+    "code": "ISK",
+    "city": "Nashik",
+    "state": "Maharashtra"
+  },
+  {
+    "name": "Jalgaon Airport",
+    "code": "JLG",
+    "city": "Jalgaon",
+    "state": "Maharashtra"
+  },
+  {
+    "name": "Sindhudurg Airport (Chipi)",
+    "code": "SDW",
+    "city": "Sindhudurg",
+    "state": "Maharashtra"
+  },
+  {
+    "name": "Navi Mumbai International Airport",
+    "code": "NMI",
+    "city": "Navi Mumbai",
+    "state": "Maharashtra"
+  },
+  {
+    "name": "Kempegowda International Airport",
+    "code": "BLR",
+    "city": "Bengaluru",
+    "state": "Karnataka"
+  },
+  {
+    "name": "Mangaluru International Airport",
+    "code": "IXE",
+    "city": "Mangaluru",
+    "state": "Karnataka"
+  },
+  {
+    "name": "Belagavi Airport (Sambre)",
+    "code": "IXG",
+    "city": "Belagavi",
+    "state": "Karnataka"
+  },
+  {
+    "name": "Hubballi Airport",
+    "code": "HBX",
+    "city": "Hubballi / Dharwad",
+    "state": "Karnataka"
+  },
+  {
+    "name": "Mysuru Airport (Mandakalli)",
+    "code": "MYQ",
+    "city": "Mysuru",
+    "state": "Karnataka"
+  },
+  {
+    "name": "Kalaburagi Airport",
+    "code": "GBI",
+    "city": "Kalaburagi / Gulbarga",
+    "state": "Karnataka"
+  },
+  {
+    "name": "Bidar Airport",
+    "code": "IXX",
+    "city": "Bidar",
+    "state": "Karnataka"
+  },
+  {
+    "name": "Kuvempu Airport (Shivamogga)",
+    "code": "RQY",
+    "city": "Shivamogga",
+    "state": "Karnataka"
+  },
+  {
+    "name": "Jindal Vijaynagar Airport (Toranagallu)",
+    "code": "VDY",
+    "city": "Ballari / Toranagallu",
+    "state": "Karnataka"
+  },
+  {
+    "name": "Chennai International Airport",
+    "code": "MAA",
+    "city": "Chennai",
+    "state": "Tamil Nadu"
+  },
+  {
+    "name": "Coimbatore International Airport",
+    "code": "CJB",
+    "city": "Coimbatore",
+    "state": "Tamil Nadu"
+  },
+  {
+    "name": "Tiruchirappalli International Airport",
+    "code": "TRZ",
+    "city": "Tiruchirappalli",
+    "state": "Tamil Nadu"
+  },
+  {
+    "name": "Madurai Airport",
+    "code": "IXM",
+    "city": "Madurai",
+    "state": "Tamil Nadu"
+  },
+  {
+    "name": "Tuticorin Airport",
+    "code": "TCR",
+    "city": "Thoothukudi / Tuticorin",
+    "state": "Tamil Nadu"
+  },
+  {
+    "name": "Salem Airport",
+    "code": "SXV",
+    "city": "Salem",
+    "state": "Tamil Nadu"
+  },
+  {
+    "name": "Cochin International Airport",
+    "code": "COK",
+    "city": "Kochi / Ernakulam",
+    "state": "Kerala"
+  },
+  {
+    "name": "Thiruvananthapuram International Airport",
+    "code": "TRV",
+    "city": "Thiruvananthapuram",
+    "state": "Kerala"
+  },
+  {
+    "name": "Calicut International Airport (Kozhikode)",
+    "code": "CCJ",
+    "city": "Kozhikode / Calicut",
+    "state": "Kerala"
+  },
+  {
+    "name": "Kannur International Airport",
+    "code": "CNN",
+    "city": "Kannur",
+    "state": "Kerala"
+  },
+  {
+    "name": "Rajiv Gandhi International Airport",
+    "code": "HYD",
+    "city": "Hyderabad",
+    "state": "Telangana"
+  },
+  {
+    "name": "Begumpet Airport",
+    "code": "BPM",
+    "city": "Hyderabad",
+    "state": "Telangana"
+  },
+  {
+    "name": "Visakhapatnam International Airport",
+    "code": "VTZ",
+    "city": "Visakhapatnam",
+    "state": "Andhra Pradesh"
+  },
+  {
+    "name": "Vijayawada International Airport",
+    "code": "VGA",
+    "city": "Vijayawada",
+    "state": "Andhra Pradesh"
+  },
+  {
+    "name": "Tirupati Airport",
+    "code": "TIR",
+    "city": "Tirupati",
+    "state": "Andhra Pradesh"
+  },
+  {
+    "name": "Rajahmundry Airport",
+    "code": "RJA",
+    "city": "Rajahmundry",
+    "state": "Andhra Pradesh"
+  },
+  {
+    "name": "Kadapa Airport",
+    "code": "CDP",
+    "city": "Kadapa",
+    "state": "Andhra Pradesh"
+  },
+  {
+    "name": "Kurnool Airport (Uyyalawada)",
+    "code": "KJB",
+    "city": "Kurnool",
+    "state": "Andhra Pradesh"
+  },
+  {
+    "name": "Sardar Vallabhbhai Patel International Airport",
+    "code": "AMD",
+    "city": "Ahmedabad",
+    "state": "Gujarat"
+  },
+  {
+    "name": "Surat International Airport",
+    "code": "STV",
+    "city": "Surat",
+    "state": "Gujarat"
+  },
+  {
+    "name": "Vadodara Airport (Harni)",
+    "code": "BDQ",
+    "city": "Vadodara",
+    "state": "Gujarat"
+  },
+  {
+    "name": "Rajkot International Airport (Hirasar)",
+    "code": "HSR",
+    "city": "Rajkot",
+    "state": "Gujarat"
+  },
+  {
+    "name": "Bhavnagar Airport",
+    "code": "BHU",
+    "city": "Bhavnagar",
+    "state": "Gujarat"
+  },
+  {
+    "name": "Jamnagar Airport",
+    "code": "JGA",
+    "city": "Jamnagar",
+    "state": "Gujarat"
+  },
+  {
+    "name": "Porbandar Airport",
+    "code": "PBD",
+    "city": "Porbandar",
+    "state": "Gujarat"
+  },
+  {
+    "name": "Bhuj Airport (Rudra Mata)",
+    "code": "BHJ",
+    "city": "Bhuj / Kutch",
+    "state": "Gujarat"
+  },
+  {
+    "name": "Kandla Airport",
+    "code": "IXY",
+    "city": "Gandhidham / Kandla",
+    "state": "Gujarat"
+  },
+  {
+    "name": "Keshod Airport",
+    "code": "IXK",
+    "city": "Keshod / Junagadh",
+    "state": "Gujarat"
+  },
+  {
+    "name": "Dabolim International Airport",
+    "code": "GOI",
+    "city": "Dabolim / South Goa",
+    "state": "Goa"
+  },
+  {
+    "name": "Manohar International Airport (Mopa)",
+    "code": "GOX",
+    "city": "Mopa / North Goa",
+    "state": "Goa"
+  },
+  {
+    "name": "Netaji Subhash Chandra Bose International Airport",
+    "code": "CCU",
+    "city": "Kolkata",
+    "state": "West Bengal"
+  },
+  {
+    "name": "Bagdogra International Airport",
+    "code": "IXB",
+    "city": "Siliguri / Bagdogra",
+    "state": "West Bengal"
+  },
+  {
+    "name": "Kazi Nazrul Islam Airport (Andal)",
+    "code": "RDP",
+    "city": "Durgapur / Asansol",
+    "state": "West Bengal"
+  },
+  {
+    "name": "Cooch Behar Airport",
+    "code": "COH",
+    "city": "Cooch Behar",
+    "state": "West Bengal"
+  },
+  {
+    "name": "Biju Patnaik International Airport",
+    "code": "BBI",
+    "city": "Bhubaneswar",
+    "state": "Odisha"
+  },
+  {
+    "name": "Veer Surendra Sai Airport",
+    "code": "JRG",
+    "city": "Jharsuguda",
+    "state": "Odisha"
+  },
+  {
+    "name": "Rourkela Airport",
+    "code": "RRK",
+    "city": "Rourkela",
+    "state": "Odisha"
+  },
+  {
+    "name": "Jeypore Airport",
+    "code": "PYB",
+    "city": "Jeypore",
+    "state": "Odisha"
+  },
+  {
+    "name": "Utkela Airport",
+    "code": "UET",
+    "city": "Bhawanipatna / Kalahandi",
+    "state": "Odisha"
+  },
+  {
+    "name": "Jaipur International Airport",
+    "code": "JAI",
+    "city": "Jaipur",
+    "state": "Rajasthan"
+  },
+  {
+    "name": "Maharana Pratap Airport",
+    "code": "UDR",
+    "city": "Udaipur",
+    "state": "Rajasthan"
+  },
+  {
+    "name": "Jodhpur Airport",
+    "code": "JDH",
+    "city": "Jodhpur",
+    "state": "Rajasthan"
+  },
+  {
+    "name": "Jaisalmer Airport",
+    "code": "JSA",
+    "city": "Jaisalmer",
+    "state": "Rajasthan"
+  },
+  {
+    "name": "Bikaner Airport (Nal)",
+    "code": "BKB",
+    "city": "Bikaner",
+    "state": "Rajasthan"
+  },
+  {
+    "name": "Kishangarh Airport",
+    "code": "KQH",
+    "city": "Ajmer / Kishangarh",
+    "state": "Rajasthan"
+  },
+  {
+    "name": "Kota Airport",
+    "code": "KTU",
+    "city": "Kota",
+    "state": "Rajasthan"
+  },
+  {
+    "name": "Chaudhary Charan Singh International Airport",
+    "code": "LKO",
+    "city": "Lucknow",
+    "state": "Uttar Pradesh"
+  },
+  {
+    "name": "Lal Bahadur Shastri International Airport",
+    "code": "VNS",
+    "city": "Varanasi",
+    "state": "Uttar Pradesh"
+  },
+  {
+    "name": "Maharishi Valmiki International Airport",
+    "code": "AYJ",
+    "city": "Ayodhya",
+    "state": "Uttar Pradesh"
+  },
+  {
+    "name": "Prayagraj Airport (Bamrauli)",
+    "code": "IXD",
+    "city": "Prayagraj / Allahabad",
+    "state": "Uttar Pradesh"
+  },
+  {
+    "name": "Gorakhpur Airport (Mahayogi Gorakhnath)",
+    "code": "GOP",
+    "city": "Gorakhpur",
+    "state": "Uttar Pradesh"
+  },
+  {
+    "name": "Agra Airport (Kheria)",
+    "code": "AGR",
+    "city": "Agra",
+    "state": "Uttar Pradesh"
+  },
+  {
+    "name": "Kanpur Airport (Chakeri)",
+    "code": "KNU",
+    "city": "Kanpur",
+    "state": "Uttar Pradesh"
+  },
+  {
+    "name": "Bareilly Airport",
+    "code": "BEK",
+    "city": "Bareilly",
+    "state": "Uttar Pradesh"
+  },
+  {
+    "name": "Kushinagar International Airport",
+    "code": "KBH",
+    "city": "Kushinagar",
+    "state": "Uttar Pradesh"
+  },
+  {
+    "name": "Aligarh Airport",
+    "code": "IXH",
+    "city": "Aligarh",
+    "state": "Uttar Pradesh"
+  },
+  {
+    "name": "Moradabad Airport",
+    "code": "MBD",
+    "city": "Moradabad",
+    "state": "Uttar Pradesh"
+  },
+  {
+    "name": "Devi Ahilya Bai Holkar International Airport",
+    "code": "IDR",
+    "city": "Indore",
+    "state": "Madhya Pradesh"
+  },
+  {
+    "name": "Raja Bhoj International Airport",
+    "code": "BHO",
+    "city": "Bhopal",
+    "state": "Madhya Pradesh"
+  },
+  {
+    "name": "Rajmata Vijaya Raje Scindia Airport",
+    "code": "GWL",
+    "city": "Gwalior",
+    "state": "Madhya Pradesh"
+  },
+  {
+    "name": "Jabalpur Airport (Dumna)",
+    "code": "JLR",
+    "city": "Jabalpur",
+    "state": "Madhya Pradesh"
+  },
+  {
+    "name": "Khajuraho Airport",
+    "code": "HJR",
+    "city": "Khajuraho",
+    "state": "Madhya Pradesh"
+  },
+  {
+    "name": "Rewa Airport",
+    "code": "REW",
+    "city": "Rewa",
+    "state": "Madhya Pradesh"
+  },
+  {
+    "name": "Sri Guru Ram Dass Jee International Airport",
+    "code": "ATQ",
+    "city": "Amritsar",
+    "state": "Punjab"
+  },
+  {
+    "name": "Shaheed Bhagat Singh International Airport",
+    "code": "IXC",
+    "city": "Chandigarh / Mohali",
+    "state": "Chandigarh"
+  },
+  {
+    "name": "Adampur Airport (Jalandhar)",
+    "code": "AIP",
+    "city": "Jalandhar",
+    "state": "Punjab"
+  },
+  {
+    "name": "Bathinda Airport",
+    "code": "BUP",
+    "city": "Bathinda",
+    "state": "Punjab"
+  },
+  {
+    "name": "Pathankot Airport",
+    "code": "IXP",
+    "city": "Pathankot",
+    "state": "Punjab"
+  },
+  {
+    "name": "Ludhiana Airport (Sahnewal)",
+    "code": "LUH",
+    "city": "Ludhiana",
+    "state": "Punjab"
+  },
+  {
+    "name": "Hisar Airport (Maharaja Agrasen)",
+    "code": "HSS",
+    "city": "Hisar",
+    "state": "Haryana"
+  },
+  {
+    "name": "Kullu–Manali Airport (Bhuntar)",
+    "code": "KUU",
+    "city": "Kullu / Manali",
+    "state": "Himachal Pradesh"
+  },
+  {
+    "name": "Kangra Airport (Gaggal / Dharamshala)",
+    "code": "DHM",
+    "city": "Dharamshala / Kangra",
+    "state": "Himachal Pradesh"
+  },
+  {
+    "name": "Shimla Airport (Jubbarhatti)",
+    "code": "SLV",
+    "city": "Shimla",
+    "state": "Himachal Pradesh"
+  },
+  {
+    "name": "Sheikh ul-Alam International Airport",
+    "code": "SXR",
+    "city": "Srinagar",
+    "state": "Jammu and Kashmir"
+  },
+  {
+    "name": "Jammu Airport (Satwari)",
+    "code": "IXJ",
+    "city": "Jammu",
+    "state": "Jammu and Kashmir"
+  },
+  {
+    "name": "Kushok Bakula Rimpochee Airport",
+    "code": "IXL",
+    "city": "Leh",
+    "state": "Ladakh"
+  },
+  {
+    "name": "Jolly Grant Airport",
+    "code": "DED",
+    "city": "Dehradun / Rishikesh",
+    "state": "Uttarakhand"
+  },
+  {
+    "name": "Pantnagar Airport",
+    "code": "PGH",
+    "city": "Pantnagar / Nainital",
+    "state": "Uttarakhand"
+  },
+  {
+    "name": "Naini Saini Airport",
+    "code": "NNS",
+    "city": "Pithoragarh",
+    "state": "Uttarakhand"
+  },
+  {
+    "name": "Jay Prakash Narayan Airport",
+    "code": "PAT",
+    "city": "Patna",
+    "state": "Bihar"
+  },
+  {
+    "name": "Gaya International Airport",
+    "code": "GAY",
+    "city": "Gaya / Bodh Gaya",
+    "state": "Bihar"
+  },
+  {
+    "name": "Darbhanga Airport",
+    "code": "DBR",
+    "city": "Darbhanga",
+    "state": "Bihar"
+  },
+  {
+    "name": "Birsa Munda Airport",
+    "code": "IXR",
+    "city": "Ranchi",
+    "state": "Jharkhand"
+  },
+  {
+    "name": "Deoghar Airport",
+    "code": "DGH",
+    "city": "Deoghar",
+    "state": "Jharkhand"
+  },
+  {
+    "name": "Sonari Airport",
+    "code": "IXW",
+    "city": "Jamshedpur",
+    "state": "Jharkhand"
+  },
+  {
+    "name": "Lokpriya Gopinath Bordoloi International Airport",
+    "code": "GAU",
+    "city": "Guwahati",
+    "state": "Assam"
+  },
+  {
+    "name": "Dibrugarh Airport (Mohanbari)",
+    "code": "DIB",
+    "city": "Dibrugarh",
+    "state": "Assam"
+  },
+  {
+    "name": "Silchar Airport (Kumbhirgram)",
+    "code": "IXS",
+    "city": "Silchar",
+    "state": "Assam"
+  },
+  {
+    "name": "Jorhat Airport (Rowriah)",
+    "code": "JRH",
+    "city": "Jorhat",
+    "state": "Assam"
+  },
+  {
+    "name": "Tezpur Airport (Salonibari)",
+    "code": "TEZ",
+    "city": "Tezpur",
+    "state": "Assam"
+  },
+  {
+    "name": "Lilabari Airport",
+    "code": "IXI",
+    "city": "North Lakhimpur",
+    "state": "Assam"
+  },
+  {
+    "name": "Rupsi Airport",
+    "code": "RUP",
+    "city": "Dhubri / Kokrajhar",
+    "state": "Assam"
+  },
+  {
+    "name": "Donyi Polo Airport (Hollongi)",
+    "code": "HGI",
+    "city": "Itanagar",
+    "state": "Arunachal Pradesh"
+  },
+  {
+    "name": "Pasighat Airport",
+    "code": "IXT",
+    "city": "Pasighat",
+    "state": "Arunachal Pradesh"
+  },
+  {
+    "name": "Tezu Airport",
+    "code": "TEI",
+    "city": "Tezu",
+    "state": "Arunachal Pradesh"
+  },
+  {
+    "name": "Bir Tikendrajit International Airport",
+    "code": "IMF",
+    "city": "Imphal",
+    "state": "Manipur"
+  },
+  {
+    "name": "Shillong Airport (Umroi)",
+    "code": "SHL",
+    "city": "Shillong",
+    "state": "Meghalaya"
+  },
+  {
+    "name": "Lengpui Airport",
+    "code": "AJL",
+    "city": "Aizawl",
+    "state": "Mizoram"
+  },
+  {
+    "name": "Dimapur Airport",
+    "code": "DMU",
+    "city": "Dimapur",
+    "state": "Nagaland"
+  },
+  {
+    "name": "Maharaja Bir Bikram Airport",
+    "code": "IXA",
+    "city": "Agartala",
+    "state": "Tripura"
+  },
+  {
+    "name": "Pakyong Airport",
+    "code": "PYG",
+    "city": "Gangtok / Pakyong",
+    "state": "Sikkim"
+  },
+  {
+    "name": "Swami Vivekananda Airport",
+    "code": "RPR",
+    "city": "Raipur",
+    "state": "Chhattisgarh"
+  },
+  {
+    "name": "Bilaspur Airport (Bilasa Devi)",
+    "code": "PAB",
+    "city": "Bilaspur",
+    "state": "Chhattisgarh"
+  },
+  {
+    "name": "Jagdalpur Airport (Maa Danteshwari)",
+    "code": "JGB",
+    "city": "Jagdalpur",
+    "state": "Chhattisgarh"
+  },
+  {
+    "name": "Veer Savarkar International Airport",
+    "code": "IXZ",
+    "city": "Port Blair",
+    "state": "Andaman and Nicobar Islands"
+  },
+  {
+    "name": "Agatti Airport",
+    "code": "AGX",
+    "city": "Agatti Island",
+    "state": "Lakshadweep"
+  },
+  {
+    "name": "Puducherry Airport",
+    "code": "PNY",
+    "city": "Puducherry",
+    "state": "Puducherry"
+  },
+  {
+    "name": "Diu Airport",
+    "code": "DIU",
+    "city": "Diu",
+    "state": "Daman and Diu"
+  }
+]
