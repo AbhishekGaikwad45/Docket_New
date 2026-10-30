@@ -6,201 +6,869 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <link rel="icon" href="{{ url_for('static', filename='img/logo.svg') }}">
-</head>
-<body>
-<div class="login">
-  <div class="login-card">
-    <div class="brand"><img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" width="48" height="48"><div><h1>Docket</h1><div class="small muted">{{ config.COMPANY_NAME }}</div></div></div>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for cat, msg in messages %}<div class="flash flash-{{ cat }}">{{ msg }}</div>{% endfor %}
-    {% endwith %}
+  <style>
+    :root {
+      --lamp-matte: #e8e2d9;
+      --lamp-shade: #f5f0e6;
+      --lamp-base: #d1ccc2;
+      --glow-color: rgba(255, 214, 110, 0.4);
+      --lamp-accent: #29a3db;
+      --on: 0;
+      --lamp-transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-    {% if otp_for %}
-      <div id="otp-error" class="flash flash-error" style="display:none;margin-bottom:14px"></div>
+    body {
+      overflow-x: hidden;
+      transition: background var(--lamp-transition);
+    }
 
-      <form id="otp-form" method="post" action="{{ url_for('auth.verify_otp') }}">
-        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-        <p class="muted">Enter the 6-digit code sent to the email registered for <b>{{ otp_for }}</b>.</p>
-        <div class="field"><label for="otp">Code</label>
-          <input type="text" id="otp" name="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" autofocus required style="letter-spacing:10px;font-size:22px;text-align:center;font-weight:600;font-family:monospace"></div>
-        <button id="otp-submit" class="btn btn-primary" style="width:100%">Verify &amp; sign in</button>
-        <p class="small" style="text-align:center;margin-top:12px"><a href="{{ url_for('auth.login') }}">Use a different employee ID</a></p>
-      </form>
+    /* Ambient Warm Glow when Lamp is ON */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 35% 45%, rgba(255, 230, 130, 0.28), transparent 70%);
+      opacity: var(--on);
+      transition: opacity var(--lamp-transition);
+      pointer-events: none;
+      z-index: 0;
+    }
 
-      <!-- Hotstar-Style In-Card Verification Animation (in-flow, dynamic card height) -->
-      <div id="otp-anim" style="
-        display: none;
+    .login {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+    }
+
+    /* Container holding Lamp on Left and Card on Right */
+    .login-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 36px;
+      width: 100%;
+      max-width: 880px;
+      flex-wrap: wrap;
+    }
+
+    /* Interactive Desk Lamp on the Left */
+    .lamp-wrapper {
+      position: relative;
+      width: 220px;
+      height: 320px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .lamp-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.25));
+    }
+
+    .lamp-shade {
+      fill: var(--lamp-shade);
+      transition: fill var(--lamp-transition), filter var(--lamp-transition);
+    }
+
+    body[data-on="true"] .lamp-shade {
+      fill: #ffffff;
+      filter: drop-shadow(0 0 32px rgba(255, 245, 175, 0.95));
+    }
+
+    .lamp-base {
+      fill: var(--lamp-base);
+    }
+
+    .inner-glow {
+      fill: #ffe082;
+      opacity: 0;
+      filter: blur(16px);
+      transition: opacity var(--lamp-transition);
+    }
+
+    body[data-on="true"] .inner-glow {
+      opacity: 0.9;
+    }
+
+    .cord-line {
+      stroke: #334155;
+      stroke-width: 2.2;
+    }
+
+    .cord-bead {
+      fill: #1e88e5;
+      stroke: #ffffff;
+      stroke-width: 1.2;
+      cursor: grab;
+      filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.35));
+    }
+
+    .cord-hit {
+      cursor: grab;
+    }
+    .cord-hit:active {
+      cursor: grabbing;
+    }
+
+    /* 3D Flip Card Viewport & Scene */
+    .card-scene {
+      width: min(420px, 92vw);
+      perspective: 1200px;
+      flex-shrink: 0;
+    }
+
+    /* Flip Card Inner: 1-Second Smooth Flip Animation, Height adjusts to content */
+    .card-flipper {
+      position: relative;
+      width: 100%;
+      transform-style: preserve-3d;
+      transition: transform 1s cubic-bezier(0.34, 1.4, 0.64, 1), height 0.4s ease;
+    }
+
+    .card-scene.is-flipped .card-flipper {
+      transform: rotateY(180deg);
+    }
+
+    /* Card Faces: Dynamic content-based height */
+    .card-face {
+      width: 100%;
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 28px 28px 24px;
+      box-shadow: 0 25px 60px rgba(0, 20, 60, 0.3);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: visible;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Front face is in normal flow initially to define parent height */
+    .card-face-front {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Back face overlays front face */
+    .card-face-back {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform: rotateY(180deg);
+    }
+
+    /* Centered Brand Header */
+    .card-face .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .card-face .brand h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1e293b;
+      line-height: 1.2;
+    }
+
+    .card-face .brand .small {
+      margin-top: 2px;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    body[data-on="true"] .card-face-back {
+      box-shadow: 0 25px 65px rgba(0, 15, 50, 0.35), 0 0 35px rgba(255, 225, 120, 0.32);
+    }
+
+    /* Mode Pill Indicator (Centered badge without Switch button) */
+    .mode-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 500;
+      background: #f1f5f9;
+      color: #475569;
+      transition: all 0.3s ease;
+      align-self: center;
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .mode-indicator.admin-mode {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    .mode-indicator .mode-bulb {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+      margin-right: 6px;
+    }
+
+    .mode-indicator.admin-mode .mode-bulb {
+      background: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b;
+    }
+
+    .mode-switch-btn {
+      background: none;
+      border: 0;
+      color: var(--blue);
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 6px;
+    }
+    .mode-switch-btn:hover {
+      text-decoration: underline;
+    }
+
+    /* Escape button styles */
+    .btn-trigger-zone {
+      position: relative;
+      margin-top: 14px;
+      padding: 10px 14px 14px;
+      margin-left: -14px;
+      margin-right: -14px;
+      box-sizing: border-box;
+    }
+
+    .btn-slot {
+      min-height: 38px;
+      position: relative;
+    }
+
+    .escape-btn-anim {
+      position: relative;
+      z-index: 10;
+      will-change: transform;
+      transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.22s ease !important;
+      cursor: pointer;
+    }
+
+    .escape-btn-anim.escaping {
+      z-index: 9999 !important;
+      box-shadow: 0 14px 34px rgba(10, 30, 80, 0.42) !important;
+      pointer-events: auto;
+    }
+
+    .escape-btn-anim.returning {
+      transition: transform 0.24s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.24s ease !important;
+    }
+
+    @media (max-width: 768px) {
+      .login-container {
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 12px 8px 6px;
-        text-align: center;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      ">
-        <style>
-          @keyframes hs-pop {
-            0% { transform: scale(0); opacity: 0; }
-            60% { transform: scale(1.15); opacity: 1; }
-            80% { transform: scale(0.95); }
-            100% { transform: scale(1); opacity: 1; }
-          }
-          @keyframes hs-check {
-            0% { stroke-dashoffset: 36; }
-            100% { stroke-dashoffset: 0; }
-          }
-          @keyframes hs-pulse-ring-1 {
-            0% { transform: scale(0.85); opacity: 0.8; }
-            50% { transform: scale(1.3); opacity: 0.35; }
-            100% { transform: scale(1.65); opacity: 0; }
-          }
-          @keyframes hs-pulse-ring-2 {
-            0% { transform: scale(0.85); opacity: 0.55; }
-            50% { transform: scale(1.18); opacity: 0.25; }
-            100% { transform: scale(1.42); opacity: 0; }
-          }
-          @keyframes hs-bar {
-            from { width: 0%; }
-            to { width: 100%; }
-          }
-          .hs-check-svg {
-            stroke-dasharray: 36;
-            stroke-dashoffset: 36;
-            animation: hs-check 0.45s cubic-bezier(0.65, 0, 0.45, 1) 0.32s forwards;
-          }
-        </style>
+        gap: 16px;
+      }
+      .lamp-wrapper {
+        height: 220px;
+        width: 180px;
+      }
+    }
+  </style>
+</head>
+<body data-on="false">
+<div class="login">
 
-        <!-- Hotstar Iconic Checkmark Badge -->
-        <div style="position:relative;width:116px;height:116px;display:flex;align-items:center;justify-content:center;margin-bottom:6px">
-          <!-- Outer Pulsing Waves -->
-          <div style="position:absolute;inset:4px;border-radius:50%;background:rgba(16,185,129,0.18);animation:hs-pulse-ring-1 2s cubic-bezier(0.25,1,0.5,1) infinite"></div>
-          <div style="position:absolute;inset:16px;border-radius:50%;background:rgba(16,185,129,0.25);animation:hs-pulse-ring-2 2s cubic-bezier(0.25,1,0.5,1) 0.3s infinite"></div>
+  <div class="login-container">
+    <!-- Interactive Desk Lamp on the Left -->
+    <div class="lamp-wrapper">
+      <svg class="lamp-svg" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
+        <ellipse class="inner-glow" cx="100" cy="110" rx="60" ry="30" />
+        <rect class="lamp-base" x="92" y="100" width="16" height="160" rx="8" />
+        <rect class="lamp-base" x="60" y="250" width="80" height="12" rx="6" />
 
-          <!-- Glowing Emerald Circle -->
-          <div style="
-            position:relative;
-            width:74px;height:74px;border-radius:50%;
-            background:linear-gradient(135deg,#10b981 0%,#059669 100%);
-            box-shadow:0 12px 28px -4px rgba(16,185,129,0.48),0 4px 12px rgba(16,185,129,0.25);
-            display:flex;align-items:center;justify-content:center;
-            animation:hs-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
-          ">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12" class="hs-check-svg" />
-            </svg>
+        <!-- Pull Cord -->
+        <g class="pull-cord">
+          <line class="cord-line" x1="130" y1="110" x2="130" y2="180" />
+          <circle class="cord-bead" cx="130" cy="190" r="6" />
+          <circle class="cord-hit" cx="130" cy="190" r="26" fill="transparent" />
+        </g>
+
+        <!-- Lamp Shade -->
+        <path class="lamp-shade" d="M30 110 C 30 50, 170 50, 170 110 C 170 125, 30 125, 30 110 Z" />
+      </svg>
+      
+    </div>
+
+    <!-- 3D Flippable Card on the Right -->
+    <div class="card-scene" id="card-scene">
+      <div class="card-flipper">
+
+        <!-- FRONT FACE: Employee Sign-in (OTP) - Active when Lamp is OFF -->
+        <div class="card-face card-face-front">
+          <div class="brand">
+            <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" width="48" height="48">
+            <div>
+              <h1>Docket</h1>
+              <div class="small muted">{{ config.COMPANY_NAME }}</div>
+            </div>
           </div>
-        </div>
 
-        <!-- Verified Successfully Text -->
-        <h2 style="margin:10px 0 0;font:700 21px/1.2 Roboto,sans-serif;color:#0f172a;letter-spacing:-0.3px">
-          Verified Successfully
-        </h2>
-        <p style="margin:8px 0 0;font:400 13.5px/1.4 Roboto,sans-serif;color:#64748b">
-          Welcome back, <b style="color:#1e293b">{{ otp_for }}</b>
-        </p>
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for cat, msg in messages %}<div class="flash flash-{{ cat }}">{{ msg }}</div>{% endfor %}
+          {% endwith %}
 
-        <!-- 1.5-Second Progress Bar -->
-        <div style="width:140px;height:3.5px;border-radius:99px;background:#f1f5f9;overflow:hidden;margin-top:22px">
-          <div style="height:100%;background:#10b981;border-radius:99px;animation:hs-bar 1s linear forwards"></div>
-        </div>
-        <div style="margin-top:8px;font:400 11.5px Roboto,sans-serif;color:#94a3b8">Redirecting to dashboard…</div>
-      </div>
+          {% if otp_for %}
+            <div id="otp-error" class="flash flash-error" style="display:none;margin-bottom:14px"></div>
 
-      <script>
-        (function(){
-          var form = document.getElementById("otp-form");
-          var errorEl = document.getElementById("otp-error");
-          var submitBtn = document.getElementById("otp-submit");
-          var animOverlay = document.getElementById("otp-anim");
-          var otpInput = document.getElementById("otp");
-          if (!form || !animOverlay) return;
+            <form id="otp-form" method="post" action="{{ url_for('auth.verify_otp') }}">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <p class="muted">Enter the 6-digit code sent to the email registered for <b>{{ otp_for }}</b>.</p>
+              <div class="field"><label for="otp">Code</label>
+                <input type="text" id="otp" name="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" autofocus required style="letter-spacing:10px;font-size:22px;text-align:center;font-weight:600;font-family:monospace"></div>
+              <button id="otp-submit" class="btn btn-primary" style="width:100%">Verify &amp; sign in</button>
+              <p class="small" style="text-align:center;margin-top:12px"><a href="{{ url_for('auth.login') }}">Use a different employee ID</a></p>
+            </form>
 
-          function runSuccessAnimation(destUrl) {
-            form.style.transition = "opacity 0.2s ease";
-            form.style.opacity = "0";
-            setTimeout(function() {
-              form.style.display = "none";
-              if (errorEl) errorEl.style.display = "none";
-              animOverlay.style.display = "flex";
-              void animOverlay.offsetWidth;
-              animOverlay.style.opacity = "1";
-              setTimeout(function() {
-                window.location.href = destUrl || "{{ url_for('main.home') }}";
-              }, 1000);
-            }, 200);
-          }
+            <div id="otp-anim" style="display: none; flex-direction: column; align-items: center; justify-content: center; padding: 12px 8px 6px; text-align: center; opacity: 0; transition: opacity 0.3s ease;">
+              <style>
+                @keyframes hs-pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 80% { transform: scale(0.95); } 100% { transform: scale(1); opacity: 1; } }
+                @keyframes hs-check { 0% { stroke-dashoffset: 36; } 100% { stroke-dashoffset: 0; } }
+                @keyframes hs-pulse-ring-1 { 0% { transform: scale(0.85); opacity: 0.8; } 50% { transform: scale(1.3); opacity: 0.35; } 100% { transform: scale(1.65); opacity: 0; } }
+                @keyframes hs-pulse-ring-2 { 0% { transform: scale(0.85); opacity: 0.55; } 50% { transform: scale(1.18); opacity: 0.25; } 100% { transform: scale(1.42); opacity: 0; } }
+                @keyframes hs-bar { from { width: 0%; } to { width: 100%; } }
+                .hs-check-svg { stroke-dasharray: 36; stroke-dashoffset: 36; animation: hs-check 0.45s cubic-bezier(0.65, 0, 0.45, 1) 0.32s forwards; }
+              </style>
+              <div style="position:relative;width:116px;height:116px;display:flex;align-items:center;justify-content:center;margin-bottom:6px">
+                <div style="position:absolute;inset:4px;border-radius:50%;background:rgba(16,185,129,0.18);animation:hs-pulse-ring-1 2s cubic-bezier(0.25,1,0.5,1) infinite"></div>
+                <div style="position:absolute;inset:16px;border-radius:50%;background:rgba(16,185,129,0.25);animation:hs-pulse-ring-2 2s cubic-bezier(0.25,1,0.5,1) 0.3s infinite"></div>
+                <div style="position:relative;width:74px;height:74px;border-radius:50%;background:linear-gradient(135deg,#10b981 0%,#059669 100%);box-shadow:0 12px 28px -4px rgba(16,185,129,0.48),0 4px 12px rgba(16,185,129,0.25);display:flex;align-items:center;justify-content:center;animation:hs-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) both;">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12" class="hs-check-svg" />
+                  </svg>
+                </div>
+              </div>
+              <h2 style="margin:10px 0 0;font:700 21px/1.2 Roboto,sans-serif;color:#0f172a;letter-spacing:-0.3px">Verified Successfully</h2>
+              <p style="margin:8px 0 0;font:400 13.5px/1.4 Roboto,sans-serif;color:#64748b">Welcome back, <b style="color:#1e293b">{{ otp_for }}</b></p>
+              <div style="width:140px;height:3.5px;border-radius:99px;background:#f1f5f9;overflow:hidden;margin-top:22px">
+                <div style="height:100%;background:#10b981;border-radius:99px;animation:hs-bar 1s linear forwards"></div>
+              </div>
+              <div style="margin-top:8px;font:400 11.5px Roboto,sans-serif;color:#94a3b8">Redirecting to dashboard…</div>
+            </div>
 
-          form.addEventListener("submit", async function(e) {
-            e.preventDefault();
-            errorEl.style.display = "none";
-            submitBtn.disabled = true;
-            submitBtn.textContent = "Verifying…";
+            <script>
+              (function(){
+                var form = document.getElementById("otp-form");
+                var errorEl = document.getElementById("otp-error");
+                var submitBtn = document.getElementById("otp-submit");
+                var animOverlay = document.getElementById("otp-anim");
+                var otpInput = document.getElementById("otp");
+                if (!form || !animOverlay) return;
 
-            try {
-              var formData = new FormData(form);
-              var res = await fetch(form.action, {
-                method: "POST",
-                headers: {
-                  "X-Requested-With": "XMLHttpRequest",
-                  "Accept": "application/json"
-                },
-                body: formData
-              });
-              var data = await res.json();
-              if (res.ok && data.ok) {
-                runSuccessAnimation(data.redirect);
-              } else {
-                submitBtn.disabled = false;
-                submitBtn.textContent = "Verify & sign in";
-                errorEl.textContent = data.error || "Incorrect code. Please try again.";
-                errorEl.style.display = "block";
-                otpInput.select();
-                if (data.redirect) {
-                  setTimeout(function() { window.location.href = data.redirect; }, 1500);
+                function runSuccessAnimation(destUrl) {
+                  form.style.transition = "opacity 0.2s ease";
+                  form.style.opacity = "0";
+                  setTimeout(function() {
+                    form.style.display = "none";
+                    if (errorEl) errorEl.style.display = "none";
+                    animOverlay.style.display = "flex";
+                    void animOverlay.offsetWidth;
+                    animOverlay.style.opacity = "1";
+                    setTimeout(function() {
+                      window.location.href = destUrl || "{{ url_for('main.home') }}";
+                    }, 1000);
+                  }, 200);
                 }
-              }
-            } catch (err) {
-              form.submit();
-            }
-          });
 
-          otpInput.addEventListener("input", function() {
-            if (this.value.trim().length === 6) {
-              if (typeof form.requestSubmit === "function") {
-                form.requestSubmit();
-              } else {
-                form.dispatchEvent(new Event("submit", {cancelable: true}));
-              }
-            }
-          });
-        })();
-      </script>
+                form.addEventListener("submit", async function(e) {
+                  e.preventDefault();
+                  errorEl.style.display = "none";
+                  submitBtn.disabled = true;
+                  submitBtn.textContent = "Verifying…";
 
-    {% else %}
-      <div class="login-tabs" role="tablist">
-        <button type="button" class="on" data-tab="emp" role="tab">Employee</button>
-        <button type="button" data-tab="pwd" role="tab">Administrator</button>
+                  try {
+                    var formData = new FormData(form);
+                    var res = await fetch(form.action, {
+                      method: "POST",
+                      headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" },
+                      body: formData
+                    });
+                    var data = await res.json();
+                    if (res.ok && data.ok) {
+                      runSuccessAnimation(data.redirect);
+                    } else {
+                      submitBtn.disabled = false;
+                      submitBtn.textContent = "Verify & sign in";
+                      errorEl.textContent = data.error || "Incorrect code. Please try again.";
+                      errorEl.style.display = "block";
+                      otpInput.select();
+                      if (data.redirect) {
+                        setTimeout(function() { window.location.href = data.redirect; }, 1500);
+                      }
+                    }
+                  } catch (err) {
+                    form.submit();
+                  }
+                });
+
+                otpInput.addEventListener("input", function() {
+                  if (this.value.trim().length === 6) {
+                    if (typeof form.requestSubmit === "function") {
+                      form.requestSubmit();
+                    } else {
+                      form.dispatchEvent(new Event("submit", {cancelable: true}));
+                    }
+                  }
+                });
+              })();
+            </script>
+
+          {% else %}
+            <!-- Mode Indicator -->
+            <div class="mode-indicator">
+              <span class="mode-bulb"></span>
+              <span>Employee Sign-in (OTP)</span>
+            </div>
+
+            <!-- Employee OTP Form -->
+            <form id="emp-form" method="post" action="{{ url_for('auth.send_otp') }}">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <div class="field">
+                <label for="emp_id">Employee ID</label>
+                <input type="text" id="emp_id" name="emp_id" autocomplete="username" autofocus required>
+              </div>
+              <div class="btn-trigger-zone" id="emp-trigger-zone">
+                <div class="btn-slot">
+                  <button type="submit" id="emp-signin-btn" class="btn btn-primary escape-btn-anim" style="width:100%">Send sign-in code</button>
+                </div>
+              </div>
+            </form>
+          {% endif %}
+        </div>
+
+        <!-- BACK FACE: Administrator Login - Active when Lamp is ON -->
+        <div class="card-face card-face-back">
+          <div class="brand">
+            <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" width="48" height="48">
+            <div>
+              <h1>Docket</h1>
+              <div class="small muted">{{ config.COMPANY_NAME }}</div>
+            </div>
+          </div>
+
+          <!-- Mode Indicator -->
+          <div class="mode-indicator admin-mode">
+            <span class="mode-bulb"></span>
+            <span>Administrator Login</span>
+          </div>
+
+          <!-- Administrator Form -->
+          <form id="admin-form" method="post" action="{{ url_for('auth.password_login') }}">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <div class="field">
+              <label for="username">Username</label>
+              <input type="text" id="username" name="username" autocomplete="username" required>
+            </div>
+            <div class="field">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" autocomplete="current-password" required>
+            </div>
+            <div class="btn-trigger-zone" id="admin-trigger-zone">
+              <div class="btn-slot">
+                <button type="submit" id="admin-signin-btn" class="btn btn-primary escape-btn-anim" style="width:100%">Sign in</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
       </div>
-      <form method="post" action="{{ url_for('auth.send_otp') }}" data-pane="emp">
-        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-        <div class="field"><label for="emp_id">Employee ID</label>
-          <input type="text" id="emp_id" name="emp_id" autocomplete="username" autofocus required></div>
-        <button class="btn btn-primary" style="width:100%">Send sign-in code</button>
-      </form>
-      <form method="post" action="{{ url_for('auth.password_login') }}" data-pane="pwd" hidden>
-        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-        <div class="field"><label for="username">Username</label><input type="text" id="username" name="username" autocomplete="username" required></div>
-        <div class="field"><label for="password">Password</label><input type="password" id="password" name="password" autocomplete="current-password" required></div>
-        <button class="btn btn-primary" style="width:100%">Sign in</button>
-      </form>
-      <script>
-        document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => {
-          document.querySelectorAll("[data-tab]").forEach(x => x.classList.toggle("on", x === b));
-          document.querySelectorAll("[data-pane]").forEach(p => p.hidden = p.dataset.pane !== b.dataset.tab);
-        });
-      </script>
-    {% endif %}
+    </div>
   </div>
+
 </div>
+
+<!-- GSAP & Draggable Scripts -->
+<script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
+<script src="https://unpkg.com/gsap@3/dist/Draggable.min.js"></script>
+
+<script>
+  (function() {
+    var root = document.documentElement;
+    var body = document.body;
+    var cardScene = document.getElementById("card-scene");
+    
+    var cordBead = document.querySelector(".cord-bead");
+    var cordLine = document.querySelector(".cord-line");
+    var hitArea = document.querySelector(".cord-hit");
+
+    var isLampOn = false;
+
+    // Audio click effect
+    var clickAudio = new Audio("https://assets.codepen.io/605876/click.mp3");
+
+    function playClickSound() {
+      try {
+        clickAudio.currentTime = 0;
+        var p = clickAudio.play();
+        if (p && typeof p.catch === "function") {
+          p.catch(function() {});
+        }
+      } catch(e) {}
+    }
+
+    var cardFlipper = document.querySelector(".card-flipper");
+    var faceFront = document.querySelector(".card-face-front");
+    var faceBack = document.querySelector(".card-face-back");
+
+    function updateCardHeight() {
+      if (!cardFlipper) return;
+      var activeFace = isLampOn ? faceBack : faceFront;
+      if (activeFace) {
+        var h = activeFace.scrollHeight || activeFace.offsetHeight;
+        if (h > 0) {
+          cardFlipper.style.height = h + "px";
+        }
+      }
+    }
+
+    // Set initial content-fit height on load and resize
+    window.addEventListener("load", updateCardHeight);
+    window.addEventListener("resize", updateCardHeight);
+    setTimeout(updateCardHeight, 50);
+
+    // Toggle Lamp & Flip Card (1-Second Smooth Flip Animation)
+    window.toggleLamp = function() {
+      isLampOn = !isLampOn;
+      playClickSound();
+
+      body.setAttribute("data-on", isLampOn ? "true" : "false");
+      root.style.setProperty("--on", isLampOn ? "1" : "0");
+
+      if (adminEscape) adminEscape.reset(true);
+      if (empEscape) empEscape.reset(true);
+
+      updateCardHeight();
+
+      if (isLampOn) {
+        // FLIP TO BACK FACE (Admin Login)
+        cardScene.classList.add("is-flipped");
+        
+        var usernameInput = document.getElementById("username");
+        if (usernameInput) setTimeout(function() { usernameInput.focus(); }, 600);
+      } else {
+        // FLIP TO FRONT FACE (Employee OTP)
+        cardScene.classList.remove("is-flipped");
+        
+        var empInput = document.getElementById("emp_id");
+        if (empInput) setTimeout(function() { empInput.focus(); }, 600);
+      }
+    };
+
+    // Register GSAP Draggable for the Lamp Pull Cord
+    if (typeof gsap !== "undefined" && typeof Draggable !== "undefined") {
+      gsap.registerPlugin(Draggable);
+
+      Draggable.create(hitArea, {
+        type: "y",
+        bounds: { minY: 0, maxY: 50 },
+        onDrag: function() {
+          gsap.set(cordBead, { y: this.y });
+          gsap.set(cordLine, { attr: { y2: 180 + this.y } });
+        },
+        onRelease: function() {
+          if (this.y > 22) {
+            window.toggleLamp();
+          }
+          gsap.to([cordBead, hitArea], {
+            y: 0,
+            duration: 0.45,
+            ease: "back.out(2.5)"
+          });
+          gsap.to(cordLine, {
+            attr: { y2: 180 },
+            duration: 0.45,
+            ease: "back.out(2.5)"
+          });
+        }
+      });
+    }
+
+    // Cord bead click shortcut
+    if (hitArea) {
+      hitArea.addEventListener("click", function() {
+        if (typeof gsap !== "undefined") {
+          gsap.timeline()
+            .to([cordBead, hitArea], { y: 28, duration: 0.15, ease: "power1.in" })
+            .to(cordLine, { attr: { y2: 208 }, duration: 0.15, ease: "power1.in" }, 0)
+            .to([cordBead, hitArea], { y: 0, duration: 0.45, ease: "back.out(2.5)" })
+            .to(cordLine, { attr: { y2: 180 }, duration: 0.45, ease: "back.out(2.5)" }, "-=0.38");
+        }
+        window.toggleLamp();
+      });
+    }
+
+    // -------------------------------------------------------------
+    // Login Escape Button Animation Logic (Preserved & Tested)
+    // -------------------------------------------------------------
+    function initEscapeButton(form, btn, slot, triggerZone, isReadyFn, isActiveFn) {
+      if (!form || !btn || !slot || !triggerZone) return null;
+
+      var isEscaped = false;
+      var isReturning = false;
+      var currentOffsetX = 0;
+      var currentOffsetY = 0;
+      var returnTimer = null;
+      var lastEscapeTime = 0;
+
+      var ESCAPE_DISTANCE = 125;
+      var VIEWPORT_MARGIN = 15;
+
+      function reset(instant) {
+        if (returnTimer) {
+          clearTimeout(returnTimer);
+          returnTimer = null;
+        }
+        if (!isEscaped && !isReturning && currentOffsetX === 0 && currentOffsetY === 0) {
+          return;
+        }
+
+        isEscaped = false;
+        currentOffsetX = 0;
+        currentOffsetY = 0;
+
+        if (instant) {
+          isReturning = false;
+          btn.classList.remove("escaping", "returning");
+          btn.style.transform = "translate(0px, 0px)";
+          return;
+        }
+
+        isReturning = true;
+        btn.classList.remove("escaping");
+        btn.classList.add("returning");
+        btn.style.transform = "translate(0px, 0px)";
+
+        returnTimer = setTimeout(function() {
+          isReturning = false;
+          btn.classList.remove("returning");
+        }, 250);
+      }
+
+      function escape(cursorX, cursorY) {
+        if (!isActiveFn() || isReadyFn()) return;
+
+        var now = Date.now();
+        if (now - lastEscapeTime < 160) return;
+        lastEscapeTime = now;
+
+        if (returnTimer) {
+          clearTimeout(returnTimer);
+          returnTimer = null;
+        }
+
+        var slotRect = slot.getBoundingClientRect();
+        var origCenterX = slotRect.left + slotRect.width / 2;
+        var origCenterY = slotRect.top + slotRect.height / 2;
+
+        var dx = origCenterX - cursorX;
+        var dy = origCenterY - cursorY;
+        var dist = Math.hypot(dx, dy);
+
+        if (dist < 1) {
+          dx = (Math.random() - 0.5) * 2;
+          dy = 1;
+          dist = Math.hypot(dx, dy);
+        }
+
+        var nx = dx / dist;
+        var ny = dy / dist;
+
+        if (ny < 0.25) {
+          ny = 0.85;
+          dist = Math.hypot(nx, ny);
+          nx = nx / dist;
+          ny = ny / dist;
+        }
+
+        var targetOffsetX = nx * ESCAPE_DISTANCE;
+        var targetOffsetY = ny * ESCAPE_DISTANCE;
+
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+        var btnW = slotRect.width;
+        var btnH = slotRect.height;
+
+        var destLeft = slotRect.left + targetOffsetX;
+        var destTop = slotRect.top + targetOffsetY;
+
+        if (destLeft < VIEWPORT_MARGIN || destLeft + btnW > vw - VIEWPORT_MARGIN) {
+          nx = -nx;
+          targetOffsetX = nx * ESCAPE_DISTANCE;
+          destLeft = slotRect.left + targetOffsetX;
+        }
+        if (destTop < VIEWPORT_MARGIN || destTop + btnH > vh - VIEWPORT_MARGIN) {
+          ny = -ny;
+          targetOffsetY = ny * ESCAPE_DISTANCE;
+          destTop = slotRect.top + targetOffsetY;
+        }
+
+        var clampedLeft = Math.max(VIEWPORT_MARGIN, Math.min(destLeft, vw - btnW - VIEWPORT_MARGIN));
+        var clampedTop = Math.max(VIEWPORT_MARGIN, Math.min(destTop, vh - btnH - VIEWPORT_MARGIN));
+
+        currentOffsetX = clampedLeft - slotRect.left;
+        currentOffsetY = clampedTop - slotRect.top;
+
+        isEscaped = true;
+        isReturning = false;
+        btn.classList.remove("returning");
+        btn.classList.add("escaping");
+        btn.style.transform = "translate(" + Math.round(currentOffsetX) + "px, " + Math.round(currentOffsetY) + "px)";
+      }
+
+      triggerZone.addEventListener("pointerenter", function(e) {
+        if (isActiveFn() && !isReadyFn()) {
+          escape(e.clientX, e.clientY);
+        }
+      });
+
+      triggerZone.addEventListener("pointermove", function(e) {
+        if (!isActiveFn()) return;
+        if (isReadyFn()) {
+          if (isEscaped) reset();
+          return;
+        }
+        if (!isEscaped) {
+          escape(e.clientX, e.clientY);
+        }
+      });
+
+      triggerZone.addEventListener("pointerleave", function(e) {
+        if (isEscaped) {
+          reset();
+        }
+      });
+
+      btn.addEventListener("pointerenter", function(e) {
+        if (isActiveFn() && !isReadyFn()) {
+          escape(e.clientX, e.clientY);
+        }
+      });
+
+      btn.addEventListener("pointerleave", function(e) {
+        if (isEscaped) {
+          reset();
+        }
+      });
+
+      form.addEventListener("submit", function(e) {
+        if (!isReadyFn()) {
+          e.preventDefault();
+          e.stopPropagation();
+          var rect = btn.getBoundingClientRect();
+          escape(rect.left + rect.width / 2, rect.top + rect.height / 2);
+          return false;
+        }
+      });
+
+      btn.addEventListener("click", function(e) {
+        if (!isReadyFn()) {
+          e.preventDefault();
+          e.stopPropagation();
+          var rect = btn.getBoundingClientRect();
+          escape(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        }
+      });
+
+      window.addEventListener("resize", function() {
+        if (isEscaped) {
+          reset(true);
+        }
+      });
+
+      return {
+        reset: reset,
+        checkState: function() {
+          if (isReadyFn()) {
+            reset();
+          }
+        }
+      };
+    }
+
+    // Employee form setup
+    var empForm = document.getElementById("emp-form");
+    var empInput = document.getElementById("emp_id");
+    var empBtn = document.getElementById("emp-signin-btn");
+    var empSlot = empBtn ? empBtn.closest(".btn-slot") : null;
+    var empTrigger = document.getElementById("emp-trigger-zone");
+
+    function isEmpReady() {
+      return empInput && empInput.value.trim().length > 0;
+    }
+
+    window.empEscape = initEscapeButton(
+      empForm,
+      empBtn,
+      empSlot,
+      empTrigger,
+      isEmpReady,
+      function() { return !isLampOn; }
+    );
+
+    if (empInput) {
+      empInput.addEventListener("input", function() {
+        if (empEscape) empEscape.checkState();
+      });
+    }
+
+    // Administrator form setup
+    var adminForm = document.getElementById("admin-form");
+    var usernameInput = document.getElementById("username");
+    var passwordInput = document.getElementById("password");
+    var adminBtn = document.getElementById("admin-signin-btn");
+    var adminSlot = adminBtn ? adminBtn.closest(".btn-slot") : null;
+    var adminTrigger = document.getElementById("admin-trigger-zone");
+
+    function isAdminReady() {
+      return usernameInput && passwordInput &&
+             usernameInput.value.trim().length > 0 &&
+             passwordInput.value.trim().length > 0;
+    }
+
+    window.adminEscape = initEscapeButton(
+      adminForm,
+      adminBtn,
+      adminSlot,
+      adminTrigger,
+      isAdminReady,
+      function() { return isLampOn; }
+    );
+
+    if (usernameInput && passwordInput) {
+      usernameInput.addEventListener("input", function() {
+        if (adminEscape) adminEscape.checkState();
+      });
+      passwordInput.addEventListener("input", function() {
+        if (adminEscape) adminEscape.checkState();
+      });
+    }
+  })();
+</script>
+
 </body>
 </html>
